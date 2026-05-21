@@ -247,18 +247,27 @@ const bTotalValue = b => b.value*(PCOUNT[b.period||"annual"]||1);
 
 const bUsedValue = (b,usage) => {
   const p=b.period||"annual";
-  if(p==="annual") return usage?b.value:0;
+  if(p==="annual"){
+    if(typeof usage==="number") return Math.min(usage,b.value);
+    return usage?b.value:0;
+  }
   const arr=Array.isArray(usage)?usage:[];
-  return arr.filter(Boolean).length*b.value;
+  return arr.reduce((s,v)=>{
+    if(typeof v==="number") return s+Math.min(v,b.value);
+    return s+(v?b.value:0);
+  },0);
 };
 
-const bToggle = (b,current,idx) => {
+const bSetAmount = (b,current,idx,amount) => {
   const p=b.period||"annual";
-  if(p==="annual") return !current;
+  if(p==="annual") return amount;
   const pcount=PCOUNT[p];
-  const arr=Array.isArray(current)?[...current]:new Array(pcount).fill(false);
-  arr[idx]=!arr[idx];
-  return arr;
+  const arr=Array.isArray(current)
+    ?current.map(v=>typeof v==="boolean"?(v?b.value:0):v)
+    :new Array(pcount).fill(0);
+  const next=[...arr];
+  next[idx]=amount;
+  return next;
 };
 
 const uid=()=>Math.random().toString(36).slice(2,10);
@@ -274,6 +283,7 @@ function calcOffset(uc,mlaGlobal) {
 
 function subInfo(uc) {
   const card=DB[uc.cardId]; if(!card) return null;
+  if(uc.noSub) return null;
   const spend=uc.subSpend||0;
   const target=uc.subTarget!=null?uc.subTarget:card.sub.spend;
   const months=uc.subMonths!=null?uc.subMonths:card.sub.months;
@@ -396,24 +406,62 @@ function Overlay({onClose,children,title,wide}) {
   );
 }
 
-function PeriodChips({benefit,usage,onToggle}) {
+function PeriodChips({benefit,usage,onSetAmount}) {
+  const [editing,setEditing]=useState(null);
+  const [inputVal,setInputVal]=useState("");
   const p=benefit.period||"annual";
   const labels=PLABELS[p];
-  const arr=p==="annual"?[usage]:(Array.isArray(usage)?usage:new Array(PCOUNT[p]).fill(false));
+  const pcount=PCOUNT[p];
+
+  const getAmount=i=>{
+    if(p==="annual"){
+      if(typeof usage==="number") return usage;
+      return usage?benefit.value:0;
+    }
+    const arr=Array.isArray(usage)?usage:new Array(pcount).fill(0);
+    const v=arr[i];
+    if(typeof v==="number") return v;
+    return v?benefit.value:0;
+  };
+
+  const commit=i=>{
+    const amt=Math.max(0,Math.min(Number(inputVal)||0,benefit.value));
+    onSetAmount(i,amt);
+    setEditing(null);
+  };
+
   return(
-    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:5}}>
-      {labels.map((lbl,i)=>{
-        const used=arr[i];
-        return(
-          <div key={i} onClick={e=>{e.stopPropagation();onToggle(i);}} style={{
-            padding:"3px 9px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:600,
-            background:used?C.green:C.s3,
-            border:`1px solid ${used?C.green+"55":C.border2}`,
-            color:used?"#000":C.text2,transition:"all 0.15s"}}>
-            {lbl}{used?" ✓":""}
-          </div>
-        );
-      })}
+    <div style={{marginTop:5}}>
+      <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"flex-start"}}>
+        {labels.map((lbl,i)=>{
+          const amt=getAmount(i);
+          const full=amt>=benefit.value;
+          const partial=amt>0&&!full;
+          const isEd=editing===i;
+          return(
+            <div key={i} style={{display:"flex",flexDirection:"column",gap:3}}>
+              <div onClick={e=>{e.stopPropagation();setEditing(isEd?null:i);setInputVal(String(amt));}} style={{
+                padding:"3px 9px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:600,
+                background:full?C.green:partial?`${C.gold}33`:C.s3,
+                border:`1px solid ${full?C.green+"55":partial?C.gold+"55":C.border2}`,
+                color:full?"#000":partial?C.goldL:C.text2,transition:"all 0.15s"}}>
+                {full?`${lbl} ✓`:partial?`${lbl} $${amt}`:lbl}
+              </div>
+              {isEd&&(
+                <div style={{display:"flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}>
+                  <input type="number" value={inputVal} onChange={e=>setInputVal(e.target.value)}
+                    onBlur={()=>commit(i)}
+                    onKeyDown={e=>{if(e.key==="Enter")commit(i);if(e.key==="Escape")setEditing(null);}}
+                    autoFocus
+                    style={{width:55,background:C.s2,border:`1px solid ${C.border2}`,borderRadius:6,
+                      padding:"3px 6px",color:C.text,fontSize:11,outline:"none"}}/>
+                  <span style={{fontSize:10,color:C.text3}}>/ ${benefit.value}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -423,24 +471,34 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
   const card=DB[uc.cardId];
   const [tab,setTab]=useState("overview");
   const [spendVal,setSpendVal]=useState(String(uc.subSpend||0));
+  const [subBonusVal,setSubBonusVal]=useState(String(uc.subBonus!=null?uc.subBonus:card?.sub.bonus||0));
+  const [subTargetVal,setSubTargetVal]=useState(String(uc.subTarget!=null?uc.subTarget:card?.sub.spend||0));
+  const [subMonthsVal,setSubMonthsVal]=useState(String(uc.subMonths!=null?uc.subMonths:card?.sub.months||0));
+  const [editingSub,setEditingSub]=useState(false);
   const [nick,setNick]=useState(uc.nickname||"");
   const [bu,setBu]=useState(uc.benefitUsage||{});
   if(!card) return null;
 
   const isWaived=mlaGlobal&&card.mlaEligible;
   const off=calcOffset({...uc,benefitUsage:bu},mlaGlobal);
-  const sub=subInfo({...uc,subSpend:Number(spendVal)||0});
+  const sub=subInfo(uc);
   const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
 
-  const toggleBenefit=(id,idx)=>{
+  const setBenefitAmount=(id,idx,amt)=>{
     const b=card.benefits.find(x=>x.id===id);
-    const next=bToggle(b,bu[id],idx);
+    const next=bSetAmount(b,bu[id],idx,amt);
     const nextBu={...bu,[id]:next};
     setBu(nextBu);
     onUpdate({...uc,benefitUsage:nextBu,nickname:nick});
   };
 
   const saveSub=()=>onUpdate({...uc,subSpend:Number(spendVal)||0});
+  const saveSubDetails=()=>{
+    const bonus=Number(subBonusVal)||card.sub.bonus;
+    const target=Number(subTargetVal)||card.sub.spend;
+    const months=Number(subMonthsVal)||card.sub.months;
+    onUpdate({...uc,subSpend:Number(spendVal)||0,subBonus:bonus,subTarget:target,subMonths:months});
+  };
   const saveSettings=()=>{onUpdate({...uc,nickname:nick,benefitUsage:bu});onClose();};
 
   const TABS=[
@@ -539,7 +597,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                       <Pill color={C.blue}>Access</Pill>}
                   </div>
                   {hasValue&&(
-                    <PeriodChips benefit={b} usage={usage} onToggle={idx=>toggleBenefit(b.id,idx)}/>
+                    <PeriodChips benefit={b} usage={usage} onSetAmount={(idx,amt)=>setBenefitAmount(b.id,idx,amt)}/>
                   )}
                   {hasValue&&p!=="annual"&&(
                     <div style={{fontSize:10.5,color:C.text3,marginTop:4}}>
@@ -559,6 +617,11 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
           </div>
         )}
 
+        {tab==="sub"&&!sub&&(
+          <div style={{textAlign:"center",padding:"32px 0",color:C.text3,fontSize:13}}>
+            No sign-up bonus tracked for this card.
+          </div>
+        )}
         {tab==="sub"&&sub&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <div style={{background:sub.done?`${C.green}0D`:C.s2,
@@ -591,6 +654,37 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                 <Input value={spendVal} onChange={e=>setSpendVal(e.target.value)} type="number" placeholder="0"/>
                 <Btn gold onClick={saveSub} style={{flexShrink:0,whiteSpace:"nowrap"}}>Save</Btn>
               </div>
+            </div>
+            <div style={{background:C.s2,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:editingSub?10:0}}>
+                <div style={{fontSize:10.5,color:C.text3,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                  SUB Details
+                </div>
+                <button onClick={()=>setEditingSub(!editingSub)} style={{
+                  background:editingSub?C.s3:"transparent",border:`1px solid ${C.border2}`,
+                  borderRadius:7,padding:"3px 10px",fontSize:11,color:C.text2,cursor:"pointer",fontWeight:600}}>
+                  {editingSub?"Cancel":"✎ Edit"}
+                </button>
+              </div>
+              {editingSub&&(
+                <>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Bonus ({card.rewardType==="cashback"?"$":"pts"})</div>
+                      <Input value={subBonusVal} onChange={e=>setSubBonusVal(e.target.value)} type="number"/>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Spend ($)</div>
+                      <Input value={subTargetVal} onChange={e=>setSubTargetVal(e.target.value)} type="number"/>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Months</div>
+                      <Input value={subMonthsVal} onChange={e=>setSubMonthsVal(e.target.value)} type="number"/>
+                    </div>
+                  </div>
+                  <Btn gold onClick={()=>{saveSubDetails();setEditingSub(false);}} full>Save SUB Details</Btn>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -636,6 +730,7 @@ function AddCard({onClose,userCards,onAdd}) {
   const [q,setQ]=useState("");
   const [sel,setSel]=useState(null);
   const [nick,setNick]=useState("");
+  const [noSub,setNoSub]=useState(false);
   const [subSpend,setSubSpend]=useState("0");
   const [subBonus,setSubBonus]=useState("");
   const [subTarget,setSubTarget]=useState("");
@@ -643,6 +738,7 @@ function AddCard({onClose,userCards,onAdd}) {
 
   const selectCard=card=>{
     setSel(card);
+    setNoSub(false);
     setSubBonus(String(card.sub.bonus));
     setSubTarget(String(card.sub.spend));
     setSubMonths(String(card.sub.months));
@@ -656,17 +752,28 @@ function AddCard({onClose,userCards,onAdd}) {
   },[q]);
 
   const doAdd=()=>{
-    const bonus=Number(subBonus)||sel.sub.bonus;
-    const target=Number(subTarget)||sel.sub.spend;
-    const months=Number(subMonths)||sel.sub.months;
-    const hasCustom=bonus!==sel.sub.bonus||target!==sel.sub.spend||months!==sel.sub.months;
-    onAdd({
-      instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
-      subSpend:Number(subSpend)||0,
-      ...(hasCustom?{subBonus:bonus,subTarget:target,subMonths:months}:{}),
-      benefitUsage:{},mlaWaiver:false,
-      addedDate:new Date().toISOString().slice(0,10)
-    });
+    try{
+      if(noSub){
+        onAdd({
+          instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
+          noSub:true,subSpend:0,
+          benefitUsage:{},mlaWaiver:false,
+          addedDate:new Date().toISOString().slice(0,10)
+        });
+      } else {
+        const bonus=Number(subBonus)||sel.sub.bonus;
+        const target=Number(subTarget)||sel.sub.spend;
+        const months=Number(subMonths)||sel.sub.months;
+        const hasCustom=bonus!==sel.sub.bonus||target!==sel.sub.spend||months!==sel.sub.months;
+        onAdd({
+          instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
+          subSpend:Number(subSpend)||0,
+          ...(hasCustom?{subBonus:bonus,subTarget:target,subMonths:months}:{}),
+          benefitUsage:{},mlaWaiver:false,
+          addedDate:new Date().toISOString().slice(0,10)
+        });
+      }
+    }catch(e){console.error("AddCard error:",e);}
     onClose();
   };
 
@@ -715,27 +822,43 @@ function AddCard({onClose,userCards,onAdd}) {
               <Input value={nick} onChange={e=>setNick(e.target.value)} placeholder="e.g. Work Card"/>
             </div>
             <div style={{background:C.s2,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
-              <FLabel>Sign-Up Bonus — customize or use defaults</FLabel>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                <div>
-                  <div style={{fontSize:11,color:C.text3,marginBottom:5}}>
-                    Bonus ({sel.rewardType==="cashback"?"$":"pts"})
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:noSub?0:12}}>
+                <FLabel>Sign-Up Bonus</FLabel>
+                <div onClick={()=>setNoSub(!noSub)} style={{
+                  display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",marginBottom:6}}>
+                  <div style={{width:38,height:21,borderRadius:11,
+                    background:noSub?C.red:C.s3,border:`1px solid ${C.border2}`,
+                    position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                    <div style={{width:15,height:15,borderRadius:8,background:"#fff",
+                      position:"absolute",top:2,left:noSub?20:3,transition:"left 0.2s"}}/>
                   </div>
-                  <Input value={subBonus} onChange={e=>setSubBonus(e.target.value)} type="number"/>
-                </div>
-                <div>
-                  <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Spend ($)</div>
-                  <Input value={subTarget} onChange={e=>setSubTarget(e.target.value)} type="number"/>
-                </div>
-                <div>
-                  <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Months</div>
-                  <Input value={subMonths} onChange={e=>setSubMonths(e.target.value)} type="number"/>
+                  <span style={{fontSize:11,color:noSub?C.red:C.text3,fontWeight:600}}>No SUB</span>
                 </div>
               </div>
-              <div>
-                <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Current Spend Toward SUB ($)</div>
-                <Input value={subSpend} onChange={e=>setSubSpend(e.target.value)} type="number" placeholder="0"/>
-              </div>
+              {!noSub&&(
+                <>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>
+                        Bonus ({sel.rewardType==="cashback"?"$":"pts"})
+                      </div>
+                      <Input value={subBonus} onChange={e=>setSubBonus(e.target.value)} type="number"/>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Spend ($)</div>
+                      <Input value={subTarget} onChange={e=>setSubTarget(e.target.value)} type="number"/>
+                    </div>
+                    <div>
+                      <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Months</div>
+                      <Input value={subMonths} onChange={e=>setSubMonths(e.target.value)} type="number"/>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Current Spend Toward SUB ($)</div>
+                    <Input value={subSpend} onChange={e=>setSubSpend(e.target.value)} type="number" placeholder="0"/>
+                  </div>
+                </>
+              )}
             </div>
             <div style={{display:"flex",gap:8,marginTop:4}}>
               <Btn ghost onClick={()=>setSel(null)} style={{flex:1}}>← Back</Btn>
@@ -766,8 +889,8 @@ function PooledBenefits({cards,onUpdateCard}) {
     return Object.values(map).sort((a,b)=>b.instances.length-a.instances.length);
   },[cards]);
 
-  const togglePeriod=(uc,b,idx)=>{
-    const next=bToggle(b,uc.benefitUsage?.[b.id],idx);
+  const setPeriodAmount=(uc,b,idx,amt)=>{
+    const next=bSetAmount(b,uc.benefitUsage?.[b.id],idx,amt);
     onUpdateCard({...uc,benefitUsage:{...(uc.benefitUsage||{}),[b.id]:next}});
   };
 
@@ -831,7 +954,7 @@ function PooledBenefits({cards,onUpdateCard}) {
                       ${usedV} / ${totalV}
                     </div>
                   </div>
-                  <PeriodChips benefit={b} usage={usage} onToggle={idx=>togglePeriod(uc,b,idx)}/>
+                  <PeriodChips benefit={b} usage={usage} onSetAmount={(idx,amt)=>setPeriodAmount(uc,b,idx,amt)}/>
                 </div>
               );
             })}
@@ -848,6 +971,7 @@ export default function App() {
   const [mlaGlobal,setMlaGlobal]=useStored("cardvault_mla",false);
   const [tab,setTab]=useState("dashboard");
   const [benefitSubTab,setBenefitSubTab]=useState("bycard");
+  const [subTrackTab,setSubTrackTab]=useState("ongoing");
   const [selId,setSelId]=useState(null);
   const [showAdd,setShowAdd]=useState(false);
   const [bestCat,setBestCat]=useState("dining");
@@ -880,8 +1004,21 @@ export default function App() {
     return{uc,card,rate:card.rates[bestCat]??card.rates.other??1};
   }).filter(Boolean).sort((a,b)=>b.rate-a.rate),[cards,bestCat]);
 
+  const subGroups=useMemo(()=>{
+    const ongoing=[],completed=[],nosub=[];
+    cards.forEach(uc=>{
+      const card=DB[uc.cardId]; if(!card) return;
+      if(uc.noSub){nosub.push({uc,card});return;}
+      const sub=subInfo(uc);
+      if(!sub){nosub.push({uc,card});return;}
+      if(sub.done) completed.push({uc,card,sub});
+      else ongoing.push({uc,card,sub});
+    });
+    return{ongoing,completed,nosub};
+  },[cards]);
+
   const hasCards=cards.length>0;
-  const NAV=[["dashboard","Overview"],["cards","My Cards"],["benefits","Benefits"],["settings","Settings"]];
+  const NAV=[["dashboard","Overview"],["cards","My Cards"],["benefits","Benefits"],["subs","Sign-Up Bonuses"],["settings","Settings"]];
 
   return(
     <>
@@ -981,7 +1118,7 @@ export default function App() {
                       </select>
                     </div>
                     {catRank.map(({uc,card,rate},i)=>(
-                      <div key={uc.instanceId} style={{
+                      <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
                         display:"flex",alignItems:"center",gap:10,padding:"9px 11px",
                         borderRadius:11,marginBottom:i<catRank.length-1?6:0,
                         background:i===0?`${C.gold}0E`:"transparent",
@@ -1151,8 +1288,8 @@ export default function App() {
                                     <Pill color={C.blue}>Access</Pill>}
                                 </div>
                                 {totalV>0&&(
-                                  <PeriodChips benefit={b} usage={usage} onToggle={idx=>{
-                                    const next=bToggle(b,usage,idx);
+                                  <PeriodChips benefit={b} usage={usage} onSetAmount={(idx,amt)=>{
+                                    const next=bSetAmount(b,usage,idx,amt);
                                     updateCard({...uc,benefitUsage:{...(uc.benefitUsage||{}),[b.id]:next}});
                                   }}/>
                                 )}
@@ -1165,6 +1302,122 @@ export default function App() {
                   })}
                   {benefitSubTab==="pooled"&&(
                     <PooledBenefits cards={cards} onUpdateCard={updateCard}/>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── SIGN-UP BONUSES ── */}
+          {tab==="subs"&&(
+            <div className="fu" style={{display:"flex",flexDirection:"column",gap:16}}>
+              {!hasCards?(
+                <div style={{textAlign:"center",padding:"60px 0",color:C.text3}}>Add cards to track sign-up bonuses</div>
+              ):(
+                <>
+                  <div style={{display:"flex",gap:2,borderBottom:`1px solid ${C.border}`,marginBottom:4}}>
+                    {[["ongoing","Ongoing"],["completed","Completed"],["nosub","No SUB"]].map(([id,lbl])=>{
+                      const count=subGroups[id]?.length||0;
+                      return(
+                        <button key={id} onClick={()=>setSubTrackTab(id)} style={{
+                          background:subTrackTab===id?`${C.purple}15`:"transparent",
+                          border:subTrackTab===id?`1px solid ${C.purple}30`:"1px solid transparent",
+                          color:subTrackTab===id?C.purple:C.text2,
+                          borderRadius:"8px 8px 0 0",padding:"7px 14px",
+                          fontSize:12.5,fontWeight:subTrackTab===id?600:400,
+                          cursor:"pointer",marginBottom:-1,transition:"all 0.15s",whiteSpace:"nowrap"}}>
+                          {lbl}{count>0&&<span style={{marginLeft:5,fontSize:10,opacity:0.7}}>({count})</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {subTrackTab==="ongoing"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {subGroups.ongoing.length===0?(
+                        <div style={{textAlign:"center",padding:"40px 0",color:C.text3,fontSize:13}}>
+                          No ongoing sign-up bonuses
+                        </div>
+                      ):subGroups.ongoing.map(({uc,card,sub})=>(
+                        <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
+                          background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"14px 16px"}}>
+                          <div style={{display:"flex",gap:12,marginBottom:12}}>
+                            <CardArt card={card} sm nickname={uc.nickname}/>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{uc.nickname||card.short}</div>
+                              <div style={{fontSize:11,color:C.text3,marginBottom:6}}>{card.issuer}</div>
+                              <Pill color={C.purple}>
+                                {card.rewardType==="cashback"?`$${sub.bonus.toLocaleString()}`:`${sub.bonus.toLocaleString()} ${sub.currency}`}
+                              </Pill>
+                            </div>
+                            <div style={{textAlign:"right",flexShrink:0}}>
+                              <div style={{fontSize:11,color:C.text3}}>spent</div>
+                              <div style={{fontSize:16,fontWeight:700,color:C.text}}>${sub.spend.toLocaleString()}</div>
+                              <div style={{fontSize:10,color:C.text3}}>of ${sub.target.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <Bar pct={sub.pct} color={C.purple}/>
+                          <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:11}}>
+                            <span style={{color:C.text3}}>{Math.round(sub.pct)}% complete</span>
+                            <span style={{color:C.purple,fontWeight:600}}>${sub.remaining.toLocaleString()} remaining</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {subTrackTab==="completed"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {subGroups.completed.length===0?(
+                        <div style={{textAlign:"center",padding:"40px 0",color:C.text3,fontSize:13}}>
+                          No completed sign-up bonuses yet
+                        </div>
+                      ):subGroups.completed.map(({uc,card,sub})=>(
+                        <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
+                          background:`${C.green}08`,border:`1px solid ${C.green}30`,borderRadius:16,padding:"14px 16px"}}>
+                          <div style={{display:"flex",gap:12,marginBottom:10}}>
+                            <CardArt card={card} sm nickname={uc.nickname}/>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{uc.nickname||card.short}</div>
+                              <div style={{fontSize:11,color:C.text3,marginBottom:6}}>{card.issuer}</div>
+                              <Pill color={C.green}>✓ SUB Complete</Pill>
+                            </div>
+                            <div style={{textAlign:"right",flexShrink:0}}>
+                              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600,color:C.green}}>
+                                {card.rewardType==="cashback"?`$${sub.bonus.toLocaleString()}`:`${sub.bonus.toLocaleString()}`}
+                              </div>
+                              <div style={{fontSize:10,color:C.text3}}>{card.rewardType==="cashback"?"cash back":sub.currency}</div>
+                            </div>
+                          </div>
+                          <Bar pct={100} color={C.green}/>
+                          <div style={{fontSize:11,color:C.green,marginTop:5,textAlign:"right",fontWeight:600}}>
+                            🎉 Threshold met
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {subTrackTab==="nosub"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {subGroups.nosub.length===0?(
+                        <div style={{textAlign:"center",padding:"40px 0",color:C.text3,fontSize:13}}>
+                          All your cards have sign-up bonuses tracked
+                        </div>
+                      ):subGroups.nosub.map(({uc,card})=>(
+                        <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
+                          background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"12px 14px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:12}}>
+                            <CardArt card={card} sm nickname={uc.nickname}/>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:13,fontWeight:600}}>{uc.nickname||card.short}</div>
+                              <div style={{fontSize:11,color:C.text3}}>{card.issuer}</div>
+                            </div>
+                            <Pill color={C.text3}>No SUB</Pill>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </>
               )}
@@ -1233,7 +1486,7 @@ export default function App() {
       </div>
 
       {sel&&<CardDetail uc={sel} onClose={()=>setSelId(null)} onUpdate={updateCard} onDelete={deleteCard} mlaGlobal={mlaGlobal}/>}
-      {showAdd&&<AddCard onClose={()=>setShowAdd(false)} userCards={cards} onAdd={addCard}/>}
+      {showAdd&&<AddCard onClose={()=>{setShowAdd(false);setTab("dashboard");}} userCards={cards} onAdd={addCard}/>}
     </>
   );
 }
