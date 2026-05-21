@@ -196,7 +196,7 @@ const DB = {
   "venture-x": {
     id:"venture-x",name:"Capital One Venture X",issuer:"Capital One",short:"Venture X",
     annualFee:395,g1:"#6B0A0A",g2:"#B01828",rewardType:"miles",currency:"Venture Miles",cpp:0.01,
-    mlaEligible:true,
+    mlaEligible:false,
     rates:{flights:10,hotels:10,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
     sub:{bonus:75000,spend:4000,months:3},
     benefits:[
@@ -240,6 +240,1118 @@ const DB = {
     sub:{bonus:20000,spend:1000,months:3},
     benefits:[],
   },
+
+  // ── CAPITAL ONE ───────────────────────────────────────────────────
+  "capital-one-venture": {
+    id:"capital-one-venture",name:"Capital One Venture Rewards Credit Card",issuer:"Capital One",short:"Venture",
+    annualFee:95,g1:"#6B0A0A",g2:"#B01828",rewardType:"miles",currency:"Venture Miles",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:75000,spend:4000,months:3},
+    benefits:[
+      {id:"ge",name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "capital-one-ventureone": {
+    id:"capital-one-ventureone",name:"Capital One VentureOne Rewards Credit Card",issuer:"Capital One",short:"VentureOne",
+    annualFee:0,g1:"#7A1010",g2:"#C02030",rewardType:"miles",currency:"Venture Miles",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:1.25,groceries:1.25,gas:1.25,streaming:1.25,transit:1.25,other:1.25},
+    sub:{bonus:20000,spend:500,months:3},
+    benefits:[],
+  },
+  "capital-one-savor": {
+    id:"capital-one-savor",name:"Capital One Savor Cash Rewards Credit Card",issuer:"Capital One",short:"Savor",
+    annualFee:0,g1:"#5A0808",g2:"#991020",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:1,hotels:1,dining:3,groceries:3,gas:1,streaming:3,transit:1,other:1},
+    sub:{bonus:250,spend:500,months:3},
+    benefits:[],
+  },
+  "capital-one-quicksilver": {
+    id:"capital-one-quicksilver",name:"Capital One Quicksilver Cash Rewards Credit Card",issuer:"Capital One",short:"Quicksilver",
+    annualFee:0,g1:"#880E14",g2:"#C01C28",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:200,spend:500,months:3},
+    benefits:[],
+  },
+  "capital-one-venture-x-biz": {
+    id:"capital-one-venture-x-biz",name:"Capital One Venture X Business",issuer:"Capital One",short:"Venture X Business",
+    annualFee:395,g1:"#4A0606",g2:"#880E18",rewardType:"miles",currency:"Venture Miles",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:10,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:150000,spend:30000,months:3},
+    benefits:[
+      {id:"travel",      name:"Travel Credit (Capital One Travel)",   value:300,period:"annual",group:"venture-travel"},
+      {id:"anniversary", name:"10k Anniversary Miles (~$100)",        value:100,period:"annual",group:"venture-anniversary"},
+      {id:"lounge",      name:"Capital One Lounge Access",            value:0,  period:"annual"},
+      {id:"ppass",       name:"Priority Pass Membership",             value:0,  period:"annual"},
+    ],
+  },
+  "capital-one-venture-biz": {
+    id:"capital-one-venture-biz",name:"Capital One Venture Business",issuer:"Capital One",short:"Venture Business",
+    annualFee:95,g1:"#600808",g2:"#9E1420",rewardType:"miles",currency:"Venture Miles",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:50000,spend:4500,months:3},
+    benefits:[
+      {id:"ge",name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "capital-one-spark-cash-plus": {
+    id:"capital-one-spark-cash-plus",name:"Capital One Spark Cash Plus",issuer:"Capital One",short:"Spark Cash Plus",
+    annualFee:150,g1:"#3A0404",g2:"#7A0C14",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:1200,spend:30000,months:3},
+    benefits:[
+      {id:"cashback",name:"$200 Cash Bonus (each year you spend $200k+)",value:200,period:"annual",group:"spark-bonus"},
+    ],
+  },
+  "capital-one-spark-cash-select": {
+    id:"capital-one-spark-cash-select",name:"Capital One Spark Cash Select",issuer:"Capital One",short:"Spark Cash Select",
+    annualFee:0,g1:"#500606",g2:"#8C1018",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:500,spend:4500,months:6},
+    benefits:[],
+  },
+
+  // ── BANK OF AMERICA ───────────────────────────────────────────────
+  "boa-premium-rewards-elite": {
+    id:"boa-premium-rewards-elite",name:"Bank of America® Premium Rewards® Elite Credit Card",issuer:"Bank of America",short:"BofA Premium Elite",
+    annualFee:550,g1:"#8B0000",g2:"#CC1010",rewardType:"points",currency:"Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:75000,spend:5000,months:3},
+    benefits:[
+      {id:"airline",  name:"Airline Incidental Credit",      value:300,period:"annual",group:"boa-airline"},
+      {id:"lifestyle",name:"Lifestyle Credit",               value:150,period:"annual",group:"boa-lifestyle"},
+      {id:"lounge",   name:"Priority Pass Select",           value:0,  period:"annual"},
+      {id:"ge",       name:"Global Entry / TSA PreCheck",    value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "boa-premium-rewards": {
+    id:"boa-premium-rewards",name:"Bank of America® Premium Rewards® Credit Card",issuer:"Bank of America",short:"BofA Premium Rewards",
+    annualFee:95,g1:"#780000",g2:"#B80C0C",rewardType:"points",currency:"Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:60000,spend:4000,months:3},
+    benefits:[
+      {id:"airline",name:"Airline Incidental Credit",    value:100,period:"annual",group:"boa-airline"},
+      {id:"ge",     name:"Global Entry / TSA PreCheck",  value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "boa-travel-rewards": {
+    id:"boa-travel-rewards",name:"Bank of America® Travel Rewards Credit Card",issuer:"Bank of America",short:"BofA Travel Rewards",
+    annualFee:0,g1:"#660000",g2:"#AA0808",rewardType:"points",currency:"Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1.5,hotels:1.5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:25000,spend:1000,months:3},
+    benefits:[],
+  },
+  "boa-customized-cash": {
+    id:"boa-customized-cash",name:"Bank of America® Customized Cash Rewards Credit Card",issuer:"Bank of America",short:"BofA Customized Cash",
+    annualFee:0,g1:"#700000",g2:"#B00808",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:3,groceries:2,gas:3,streaming:3,transit:3,other:1},
+    sub:{bonus:200,spend:1000,months:3},
+    benefits:[],
+  },
+  "boa-unlimited-cash": {
+    id:"boa-unlimited-cash",name:"Bank of America® Unlimited Cash Rewards Credit Card",issuer:"Bank of America",short:"BofA Unlimited Cash",
+    annualFee:0,g1:"#680000",g2:"#A80808",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1.5,hotels:1.5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:200,spend:1000,months:3},
+    benefits:[],
+  },
+  "alaska-visa-signature": {
+    id:"alaska-visa-signature",name:"Alaska Airlines Visa Signature® Credit Card",issuer:"Bank of America",short:"Alaska Airlines Visa",
+    annualFee:95,g1:"#003594",g2:"#0048CC",rewardType:"miles",currency:"Alaska Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:3000,months:3},
+    benefits:[
+      {id:"companion",name:"Companion Fare (from $122, spend $6k/yr)",value:300,period:"annual",group:"alaska-companion"},
+      {id:"bag",      name:"First Checked Bag Free (up to 6 guests)", value:35, period:"annual",group:"alaska-bag"},
+    ],
+  },
+  "alaska-visa-platinum": {
+    id:"alaska-visa-platinum",name:"Alaska Airlines Visa® Platinum Plus® Credit Card",issuer:"Bank of America",short:"Alaska Platinum Plus",
+    annualFee:75,g1:"#002A7A",g2:"#003AAA",rewardType:"miles",currency:"Alaska Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:30000,spend:1000,months:3},
+    benefits:[
+      {id:"bag",name:"First Checked Bag Free",value:35,period:"annual",group:"alaska-bag"},
+    ],
+  },
+  "atmos-ascent": {
+    id:"atmos-ascent",name:"Atmos™ Rewards Ascent Visa Signature® Card",issuer:"Bank of America",short:"Atmos Ascent",
+    annualFee:395,g1:"#001A4A",g2:"#002870",rewardType:"miles",currency:"Alaska Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:4,hotels:4,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:4000,months:4},
+    benefits:[
+      {id:"companion",name:"Companion Discount Voucher",          value:300,period:"annual",group:"alaska-companion"},
+      {id:"lounge",   name:"Lounge Club Access (8 visits/yr)",    value:200,period:"annual",group:"lounge-club"},
+      {id:"ge",       name:"TSA PreCheck Credit",                 value:85, period:"annual",group:"tsa-precheck"},
+    ],
+  },
+  "boa-business-travel": {
+    id:"boa-business-travel",name:"Bank of America® Business Advantage Travel Rewards World Mastercard®",issuer:"Bank of America",short:"BofA Biz Travel",
+    annualFee:0,g1:"#580000",g2:"#980606",rewardType:"points",currency:"Points",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:3,hotels:3,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:30000,spend:3000,months:3},
+    benefits:[],
+  },
+  "boa-business-cash": {
+    id:"boa-business-cash",name:"Bank of America® Business Advantage Customized Cash Rewards Mastercard®",issuer:"Bank of America",short:"BofA Biz Cash",
+    annualFee:0,g1:"#500000",g2:"#900404",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:1,hotels:1,dining:3,groceries:2,gas:3,streaming:3,transit:3,other:1},
+    sub:{bonus:300,spend:3000,months:3},
+    benefits:[],
+  },
+  "alaska-visa-biz": {
+    id:"alaska-visa-biz",name:"Alaska Airlines Visa® Business Card",issuer:"Bank of America",short:"Alaska Airlines Biz",
+    annualFee:70,g1:"#001E60",g2:"#002D90",rewardType:"miles",currency:"Alaska Miles",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:2000,months:3},
+    benefits:[
+      {id:"companion",name:"Companion Fare (from $122, spend $6k/yr)",value:300,period:"annual",group:"alaska-companion"},
+      {id:"bag",      name:"First Checked Bag Free",                  value:35, period:"annual",group:"alaska-bag"},
+    ],
+  },
+
+  // ── WELLS FARGO (additional) ──────────────────────────────────────
+  "wells-autograph-journey": {
+    id:"wells-autograph-journey",name:"Wells Fargo Autograph Journey℠ Visa Signature Card",issuer:"Wells Fargo",short:"Autograph Journey",
+    annualFee:95,g1:"#6A0000",g2:"#AA0000",rewardType:"points",currency:"Rewards Points",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:4,hotels:5,dining:3,groceries:1,gas:1,streaming:1,transit:3,other:1},
+    sub:{bonus:60000,spend:4000,months:3},
+    benefits:[
+      {id:"airline",name:"Airline Purchase Credit",       value:50, period:"annual",group:"wf-airline"},
+      {id:"cell",   name:"Cell Phone Protection",        value:0,  period:"annual"},
+    ],
+  },
+  "wells-active-cash": {
+    id:"wells-active-cash",name:"Wells Fargo Active Cash® Card",issuer:"Wells Fargo",short:"Active Cash",
+    annualFee:0,g1:"#800000",g2:"#C00000",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:200,spend:500,months:3},
+    benefits:[],
+  },
+  "wells-attune": {
+    id:"wells-attune",name:"Wells Fargo Attune℠ World Elite Mastercard®",issuer:"Wells Fargo",short:"Attune",
+    annualFee:0,g1:"#720000",g2:"#B00000",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:1,streaming:4,transit:4,other:1},
+    sub:{bonus:100,spend:500,months:3},
+    benefits:[],
+  },
+  "choice-privileges-select": {
+    id:"choice-privileges-select",name:"Choice Privileges® Select Mastercard®",issuer:"Wells Fargo",short:"Choice Privileges Select",
+    annualFee:95,g1:"#004A80",g2:"#0068B8",rewardType:"points",currency:"Choice Privileges Points",cpp:0.006,
+    mlaEligible:false,
+    rates:{flights:1,hotels:10,dining:3,groceries:3,gas:5,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:3000,months:3},
+    benefits:[
+      {id:"anniversary",name:"Annual Bonus Points (8,000 pts)",value:48,period:"annual",group:"choice-anniversary"},
+    ],
+  },
+  "choice-privileges": {
+    id:"choice-privileges",name:"Choice Privileges® Mastercard®",issuer:"Wells Fargo",short:"Choice Privileges",
+    annualFee:0,g1:"#003870",g2:"#0055AA",rewardType:"points",currency:"Choice Privileges Points",cpp:0.006,
+    mlaEligible:false,
+    rates:{flights:1,hotels:5,dining:2,groceries:2,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:30000,spend:1000,months:3},
+    benefits:[],
+  },
+  "one-key-plus": {
+    id:"one-key-plus",name:"One Key+™ Card",issuer:"Wells Fargo",short:"One Key+",
+    annualFee:99,g1:"#1A1A4A",g2:"#2A2A78",rewardType:"cashback",currency:"OneKeyCash",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:3,hotels:3,dining:2,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:250,spend:2000,months:3},
+    benefits:[
+      {id:"status",name:"Gold status on Expedia/Hotels.com/Vrbo",value:0,period:"annual"},
+    ],
+  },
+  "one-key": {
+    id:"one-key",name:"One Key™ Card",issuer:"Wells Fargo",short:"One Key",
+    annualFee:0,g1:"#222258",g2:"#303090",rewardType:"cashback",currency:"OneKeyCash",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:100,spend:2000,months:3},
+    benefits:[],
+  },
+  "wells-signify-biz": {
+    id:"wells-signify-biz",name:"Signify Business Cash℠ Card by Wells Fargo",issuer:"Wells Fargo",short:"Signify Business Cash",
+    annualFee:0,g1:"#5A0000",g2:"#980000",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:5,transit:2,other:2},
+    sub:{bonus:500,spend:5000,months:3},
+    benefits:[],
+  },
+
+  // ── BARCLAYS ──────────────────────────────────────────────────────
+  "aviator-red": {
+    id:"aviator-red",name:"AAdvantage® Aviator® Red World Elite Mastercard®",issuer:"Barclays",short:"Aviator Red",
+    annualFee:99,g1:"#AA0000",g2:"#DD1111",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:2,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:1,months:1},
+    benefits:[
+      {id:"bag",name:"First Checked Bag Free (up to 4 companions)",value:35,period:"annual",group:"aa-bag"},
+    ],
+  },
+  "jetblue-premier": {
+    id:"jetblue-premier",name:"JetBlue Premier World Elite Mastercard®",issuer:"Barclays",short:"JetBlue Premier",
+    annualFee:299,g1:"#003B6F",g2:"#0055A0",rewardType:"points",currency:"TrueBlue Points",cpp:0.013,
+    mlaEligible:false,
+    rates:{flights:6,hotels:1,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:2},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"credit",      name:"Airline Credit (JetBlue purchases)",    value:100,period:"annual",  group:"jetblue-credit"},
+      {id:"ge",          name:"Global Entry / TSA PreCheck",           value:100,period:"annual",  group:"global-entry"},
+      {id:"anniversary", name:"5,000 Anniversary Bonus Points (~$65)", value:65, period:"annual",  group:"jetblue-anniversary"},
+      {id:"lounge",      name:"Mosaic 3 Status (spend threshold)",     value:0,  period:"annual"},
+    ],
+  },
+  "jetblue-plus": {
+    id:"jetblue-plus",name:"JetBlue Plus Card",issuer:"Barclays",short:"JetBlue Plus",
+    annualFee:99,g1:"#002D5C",g2:"#004488",rewardType:"points",currency:"TrueBlue Points",cpp:0.013,
+    mlaEligible:false,
+    rates:{flights:6,hotels:1,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"anniversary",name:"5,000 Anniversary Bonus Points (~$65)",value:65,period:"annual",group:"jetblue-anniversary"},
+      {id:"bag",        name:"First Checked Bag Free",               value:35,period:"annual",group:"jetblue-bag"},
+    ],
+  },
+  "jetblue": {
+    id:"jetblue",name:"JetBlue Card",issuer:"Barclays",short:"JetBlue",
+    annualFee:0,g1:"#00254A",g2:"#003870",rewardType:"points",currency:"TrueBlue Points",cpp:0.013,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:10000,spend:1000,months:3},
+    benefits:[],
+  },
+  "hawaiian-airlines": {
+    id:"hawaiian-airlines",name:"Hawaiian Airlines® World Elite Mastercard®",issuer:"Barclays",short:"Hawaiian Airlines",
+    annualFee:99,g1:"#6B1A4A",g2:"#A02870",rewardType:"miles",currency:"HawaiianMiles",cpp:0.011,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:2000,months:3},
+    benefits:[
+      {id:"anniversary",name:"5,000 Anniversary Bonus Miles (~$55)",value:55,period:"annual",group:"hawaiian-anniversary"},
+      {id:"companion",  name:"One-Time 50% Off Companion Discount", value:150,period:"annual",group:"hawaiian-companion"},
+    ],
+  },
+  "frontier-airlines": {
+    id:"frontier-airlines",name:"Frontier Airlines World Mastercard®",issuer:"Barclays",short:"Frontier Airlines",
+    annualFee:0,g1:"#006400",g2:"#009000",rewardType:"miles",currency:"Frontier Miles",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:1,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:40000,spend:500,months:3},
+    benefits:[],
+  },
+  "miles-and-more": {
+    id:"miles-and-more",name:"Miles & More® World Elite Mastercard®",issuer:"Barclays",short:"Miles & More",
+    annualFee:99,g1:"#003366",g2:"#004FA0",rewardType:"miles",currency:"Miles & More Miles",cpp:0.012,
+    mlaEligible:false,
+    rates:{flights:2,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:3000,months:3},
+    benefits:[
+      {id:"companion",name:"Companion Award Ticket",value:400,period:"annual",group:"lh-companion"},
+    ],
+  },
+  "wyndham-earner-plus": {
+    id:"wyndham-earner-plus",name:"Wyndham Rewards® Earner Plus Card",issuer:"Barclays",short:"Wyndham Earner Plus",
+    annualFee:75,g1:"#004A6A",g2:"#006A98",rewardType:"points",currency:"Wyndham Rewards Points",cpp:0.009,
+    mlaEligible:false,
+    rates:{flights:1,hotels:6,dining:4,groceries:4,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:45000,spend:1000,months:3},
+    benefits:[
+      {id:"anniversary",name:"7,500 Anniversary Bonus Points (~$68)",value:68,period:"annual",group:"wyndham-anniversary"},
+    ],
+  },
+  "wyndham-earner": {
+    id:"wyndham-earner",name:"Wyndham Rewards® Earner Card",issuer:"Barclays",short:"Wyndham Earner",
+    annualFee:0,g1:"#003858",g2:"#00558A",rewardType:"points",currency:"Wyndham Rewards Points",cpp:0.009,
+    mlaEligible:false,
+    rates:{flights:1,hotels:5,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:15000,spend:1000,months:3},
+    benefits:[],
+  },
+  "gm-rewards": {
+    id:"gm-rewards",name:"My GM Rewards® Mastercard®",issuer:"Barclays",short:"GM Rewards",
+    annualFee:0,g1:"#1A1A1A",g2:"#383838",rewardType:"points",currency:"GM Rewards Points",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:1,hotels:1,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:15000,spend:1000,months:3},
+    benefits:[],
+  },
+  "aviator-red-biz": {
+    id:"aviator-red-biz",name:"AAdvantage® Aviator® World Elite Business Mastercard®",issuer:"Barclays",short:"Aviator Business",
+    annualFee:95,g1:"#990000",g2:"#CC0F0F",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:2,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:2,other:1},
+    sub:{bonus:65000,spend:1000,months:3},
+    benefits:[
+      {id:"bag",name:"First Checked Bag Free",value:35,period:"annual",group:"aa-bag"},
+    ],
+  },
+  "jetblue-biz": {
+    id:"jetblue-biz",name:"JetBlue Business Card",issuer:"Barclays",short:"JetBlue Business",
+    annualFee:99,g1:"#002040",g2:"#003060",rewardType:"points",currency:"TrueBlue Points",cpp:0.013,
+    mlaEligible:false,
+    rates:{flights:6,hotels:1,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"anniversary",name:"5,000 Anniversary Bonus Points (~$65)",value:65,period:"annual",group:"jetblue-anniversary"},
+      {id:"bag",        name:"First Checked Bag Free",               value:35,period:"annual",group:"jetblue-bag"},
+    ],
+  },
+  "hawaiian-biz": {
+    id:"hawaiian-biz",name:"Hawaiian Airlines® World Elite Business Mastercard®",issuer:"Barclays",short:"Hawaiian Airlines Biz",
+    annualFee:99,g1:"#581440",g2:"#8A2060",rewardType:"miles",currency:"HawaiianMiles",cpp:0.011,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:2000,months:3},
+    benefits:[
+      {id:"anniversary",name:"5,000 Anniversary Bonus Miles (~$55)",value:55,period:"annual",group:"hawaiian-anniversary"},
+    ],
+  },
+  "wyndham-earner-biz": {
+    id:"wyndham-earner-biz",name:"Wyndham Rewards Earner® Business Card",issuer:"Barclays",short:"Wyndham Earner Biz",
+    annualFee:95,g1:"#002848",g2:"#003D6E",rewardType:"points",currency:"Wyndham Rewards Points",cpp:0.009,
+    mlaEligible:false,
+    rates:{flights:1,hotels:8,dining:1,groceries:1,gas:8,streaming:1,transit:1,other:1},
+    sub:{bonus:45000,spend:2000,months:3},
+    benefits:[],
+  },
+
+  // ── DISCOVER ──────────────────────────────────────────────────────
+  "discover-it-cash-back": {
+    id:"discover-it-cash-back",name:"Discover it® Cash Back",issuer:"Discover",short:"Discover it Cash Back",
+    annualFee:0,g1:"#CC5500",g2:"#FF7700",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:5,streaming:1,transit:1,other:1},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[],
+  },
+  "discover-it-chrome": {
+    id:"discover-it-chrome",name:"Discover it® Chrome",issuer:"Discover",short:"Discover it Chrome",
+    annualFee:0,g1:"#B84800",g2:"#E86000",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[],
+  },
+  "discover-it-miles": {
+    id:"discover-it-miles",name:"Discover it® Miles",issuer:"Discover",short:"Discover it Miles",
+    annualFee:0,g1:"#AA4000",g2:"#D85800",rewardType:"miles",currency:"Miles",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1.5,hotels:1.5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[],
+  },
+
+  // ── U.S. BANK ─────────────────────────────────────────────────────
+  "usb-altitude-connect": {
+    id:"usb-altitude-connect",name:"U.S. Bank Altitude® Connect Visa Signature® Card",issuer:"U.S. Bank",short:"Altitude Connect",
+    annualFee:95,g1:"#CC0000",g2:"#EE1111",rewardType:"points",currency:"Altitude Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:4,hotels:4,dining:2,groceries:2,gas:4,streaming:2,transit:2,other:1},
+    sub:{bonus:50000,spend:2000,months:4},
+    benefits:[
+      {id:"streaming",name:"Streaming Service Credit",          value:30, period:"annual",group:"usb-streaming"},
+      {id:"ge",       name:"Global Entry / TSA PreCheck",       value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "usb-altitude-go": {
+    id:"usb-altitude-go",name:"U.S. Bank Altitude® Go Visa Signature® Card",issuer:"U.S. Bank",short:"Altitude Go",
+    annualFee:0,g1:"#BB0000",g2:"#DD1010",rewardType:"points",currency:"Altitude Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:4,groceries:2,gas:2,streaming:2,transit:1,other:1},
+    sub:{bonus:20000,spend:1000,months:3},
+    benefits:[
+      {id:"streaming",name:"Streaming Credit ($15 after 11 consecutive streaming months)",value:15,period:"annual",group:"usb-streaming"},
+    ],
+  },
+  "usb-smartly": {
+    id:"usb-smartly",name:"U.S. Bank Smartly™ Visa Signature® Card",issuer:"U.S. Bank",short:"Smartly",
+    annualFee:0,g1:"#AA0000",g2:"#CC1010",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:350,spend:5000,months:3},
+    benefits:[],
+  },
+  "usb-cash-plus": {
+    id:"usb-cash-plus",name:"U.S. Bank Cash+® Visa Signature® Card",issuer:"U.S. Bank",short:"Cash+",
+    annualFee:0,g1:"#990000",g2:"#BB0F0F",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:2,groceries:2,gas:1,streaming:5,transit:5,other:1},
+    sub:{bonus:200,spend:1000,months:3},
+    benefits:[],
+  },
+  "usb-triple-cash-biz": {
+    id:"usb-triple-cash-biz",name:"U.S. Bank Triple Cash Rewards Visa® Business Card",issuer:"U.S. Bank",short:"Triple Cash Biz",
+    annualFee:0,g1:"#880000",g2:"#AA0A0A",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:3,streaming:1,transit:1,other:1},
+    sub:{bonus:500,spend:4500,months:5},
+    benefits:[
+      {id:"software",name:"$100 Annual Software Statement Credit",value:100,period:"annual",group:"usb-software"},
+    ],
+  },
+  "usb-altitude-connect-biz": {
+    id:"usb-altitude-connect-biz",name:"U.S. Bank Business Altitude® Connect Visa Signature® Card",issuer:"U.S. Bank",short:"Altitude Connect Biz",
+    annualFee:95,g1:"#770000",g2:"#990808",rewardType:"points",currency:"Altitude Points",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:4,hotels:4,dining:2,groceries:2,gas:4,streaming:2,transit:1,other:1},
+    sub:{bonus:50000,spend:4500,months:5},
+    benefits:[
+      {id:"ge",name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "usb-business-leverage": {
+    id:"usb-business-leverage",name:"U.S. Bank Business Leverage® Visa Signature® Card",issuer:"U.S. Bank",short:"Business Leverage",
+    annualFee:95,g1:"#660000",g2:"#880606",rewardType:"points",currency:"Altitude Points",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:75000,spend:7500,months:4},
+    benefits:[
+      {id:"credit",name:"$100 Annual Statement Credit",value:100,period:"annual",group:"usb-credit"},
+    ],
+  },
+
+  // ── BILT REWARDS ──────────────────────────────────────────────────
+  "bilt-blue": {
+    id:"bilt-blue",name:"Bilt Mastercard® (Blue)",issuer:"Bilt / Wells Fargo",short:"Bilt Blue",
+    annualFee:0,g1:"#1E2840",g2:"#2E3E60",rewardType:"points",currency:"Bilt Points",cpp:0.015,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[],
+  },
+  "bilt-obsidian": {
+    id:"bilt-obsidian",name:"Bilt Mastercard® (Obsidian)",issuer:"Bilt / Wells Fargo",short:"Bilt Obsidian",
+    annualFee:95,g1:"#0A0A0A",g2:"#202020",rewardType:"points",currency:"Bilt Points",cpp:0.015,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[
+      {id:"travel",name:"Travel / Lifestyle Credit",value:95,period:"annual",group:"bilt-credit"},
+    ],
+  },
+  "bilt-palladium": {
+    id:"bilt-palladium",name:"Bilt Mastercard® (Palladium)",issuer:"Bilt / Wells Fargo",short:"Bilt Palladium",
+    annualFee:495,g1:"#181818",g2:"#303030",rewardType:"points",currency:"Bilt Points",cpp:0.015,
+    mlaEligible:false,
+    rates:{flights:3,hotels:3,dining:3,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:0,spend:0,months:12},
+    benefits:[
+      {id:"travel",  name:"Travel Credit",          value:249,period:"annual",group:"bilt-credit"},
+      {id:"lounge",  name:"Priority Pass Select",   value:0,  period:"annual"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+
+  // ── AMEX PERSONAL CO-BRANDED ──────────────────────────────────────
+  "amex-delta-reserve": {
+    id:"amex-delta-reserve",name:"Delta SkyMiles® Reserve American Express Card",issuer:"American Express",short:"Delta Reserve",
+    annualFee:650,g1:"#1B2A5A",g2:"#2E4A9A",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:5000,months:6},
+    benefits:[
+      {id:"companion",name:"Companion Certificate (Domestic First Class)",value:500,period:"annual",group:"delta-companion"},
+      {id:"lounge",  name:"Delta Sky Club Access",                        value:0,  period:"annual"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",                  value:100,period:"annual",group:"global-entry"},
+      {id:"ridepass",name:"Delta Stays Credit",                           value:200,period:"annual",group:"delta-stays"},
+    ],
+  },
+  "amex-delta-platinum": {
+    id:"amex-delta-platinum",name:"Delta SkyMiles® Platinum American Express Card",issuer:"American Express",short:"Delta Platinum",
+    annualFee:350,g1:"#2A3A6A",g2:"#3A54A0",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:3000,months:6},
+    benefits:[
+      {id:"companion",name:"Companion Certificate (Domestic Main Cabin)",value:300,period:"annual",group:"delta-companion"},
+      {id:"credit",  name:"Delta Stays Credit",                          value:150,period:"annual",group:"delta-stays"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",                 value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "amex-delta-gold": {
+    id:"amex-delta-gold",name:"Delta SkyMiles® Gold American Express Card",issuer:"American Express",short:"Delta Gold",
+    annualFee:150,g1:"#8B6914",g2:"#C49A22",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:true,
+    rates:{flights:2,hotels:1,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:40000,spend:2000,months:6},
+    benefits:[
+      {id:"credit",name:"Delta Stays Credit",value:100,period:"annual",group:"delta-stays"},
+    ],
+  },
+  "amex-delta-blue": {
+    id:"amex-delta-blue",name:"Delta SkyMiles® Blue American Express Card",issuer:"American Express",short:"Delta Blue",
+    annualFee:0,g1:"#003B8E",g2:"#0055CC",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:true,
+    rates:{flights:2,hotels:1,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:10000,spend:1000,months:6},
+    benefits:[],
+  },
+  "amex-hilton-aspire": {
+    id:"amex-hilton-aspire",name:"Hilton Honors American Express Aspire Card",issuer:"American Express",short:"Hilton Aspire",
+    annualFee:550,g1:"#1A3A5C",g2:"#2A5A8E",rewardType:"points",currency:"Hilton Honors Points",cpp:0.005,
+    mlaEligible:true,
+    rates:{flights:3,hotels:14,dining:7,groceries:3,gas:3,streaming:3,transit:3,other:3},
+    sub:{bonus:150000,spend:6000,months:6},
+    benefits:[
+      {id:"resort",   name:"Hilton Resort Credit",          value:200,period:"semiannual",group:"hilton-resort"},
+      {id:"airline",  name:"Airline Fee Credit",            value:200,period:"annual",    group:"amex-airline"},
+      {id:"lounge",   name:"Priority Pass Select",          value:0,  period:"annual"},
+      {id:"reward",   name:"Free Weekend Night Reward",     value:500,period:"annual",    group:"hilton-night"},
+    ],
+  },
+  "amex-hilton-surpass": {
+    id:"amex-hilton-surpass",name:"Hilton Honors American Express Surpass® Card",issuer:"American Express",short:"Hilton Surpass",
+    annualFee:150,g1:"#1E3D5C",g2:"#2B5B8A",rewardType:"points",currency:"Hilton Honors Points",cpp:0.005,
+    mlaEligible:true,
+    rates:{flights:3,hotels:12,dining:6,groceries:6,gas:3,streaming:3,transit:3,other:3},
+    sub:{bonus:130000,spend:3000,months:6},
+    benefits:[
+      {id:"credit",name:"Hilton Credit",                  value:50, period:"quarterly",group:"hilton-credit"},
+      {id:"lounge",name:"Priority Pass Select (10 visits)",value:0, period:"annual"},
+    ],
+  },
+  "amex-hilton": {
+    id:"amex-hilton",name:"Hilton Honors American Express Card",issuer:"American Express",short:"Hilton Honors",
+    annualFee:0,g1:"#214568",g2:"#2F6598",rewardType:"points",currency:"Hilton Honors Points",cpp:0.005,
+    mlaEligible:true,
+    rates:{flights:3,hotels:7,dining:5,groceries:5,gas:3,streaming:3,transit:3,other:3},
+    sub:{bonus:70000,spend:2000,months:3},
+    benefits:[],
+  },
+  "amex-bonvoy-brilliant": {
+    id:"amex-bonvoy-brilliant",name:"Marriott Bonvoy Brilliant® American Express® Card",issuer:"American Express",short:"Bonvoy Brilliant",
+    annualFee:650,g1:"#5B1A1A",g2:"#8E2A2A",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:true,
+    rates:{flights:2,hotels:6,dining:3,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:95000,spend:6000,months:6},
+    benefits:[
+      {id:"dining",  name:"Brilliant Dining Credit",           value:25, period:"monthly",  group:"bonvoy-dining"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",       value:100,period:"annual",   group:"global-entry"},
+      {id:"lounge",  name:"Priority Pass Select",              value:0,  period:"annual"},
+      {id:"reward",  name:"Free Night Award (up to 85k pts)",  value:400,period:"annual",   group:"bonvoy-night"},
+    ],
+  },
+  "amex-bonvoy-bevy": {
+    id:"amex-bonvoy-bevy",name:"Marriott Bonvoy Bevy™ American Express® Card",issuer:"American Express",short:"Bonvoy Bevy",
+    annualFee:250,g1:"#6B2222",g2:"#A03030",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:true,
+    rates:{flights:2,hotels:6,dining:4,groceries:4,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:85000,spend:5000,months:6},
+    benefits:[
+      {id:"spend",name:"1,000 Bonus Points per $1 at Marriott (first $2,500/yr)",value:20,period:"annual",group:"bonvoy-spend"},
+    ],
+  },
+
+  // ── AMEX BUSINESS ─────────────────────────────────────────────────
+  "amex-biz-platinum": {
+    id:"amex-biz-platinum",name:"The Business Platinum Card® from American Express",issuer:"American Express",short:"Amex Biz Platinum",
+    annualFee:695,g1:"#787878",g2:"#C8C8C8",rewardType:"points",currency:"MR Points",cpp:0.02,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:150000,spend:20000,months:3},
+    benefits:[
+      {id:"airline",  name:"Airline Fee Credit",             value:200,period:"annual",    group:"amex-airline"},
+      {id:"dell",     name:"Dell Technologies Credit",       value:200,period:"semiannual",group:"amex-dell"},
+      {id:"indeed",   name:"Indeed Credit",                  value:90, period:"monthly",   group:"amex-indeed"},
+      {id:"adobe",    name:"Adobe Creative Solutions Credit",value:150,period:"annual",    group:"amex-adobe"},
+      {id:"wireless", name:"Wireless Telephone Credit",      value:10, period:"monthly",   group:"amex-wireless"},
+      {id:"ge",       name:"Global Entry / TSA PreCheck",    value:100,period:"annual",    group:"global-entry"},
+      {id:"lounge",   name:"Centurion Lounge Access",        value:0,  period:"annual"},
+      {id:"ppass",    name:"Priority Pass Select",           value:0,  period:"annual"},
+    ],
+  },
+  "amex-biz-gold": {
+    id:"amex-biz-gold",name:"American Express® Business Gold Card",issuer:"American Express",short:"Amex Biz Gold",
+    annualFee:375,g1:"#A07820",g2:"#D4A830",rewardType:"points",currency:"MR Points",cpp:0.02,
+    mlaEligible:false,
+    rates:{flights:4,hotels:4,dining:4,groceries:4,gas:4,streaming:4,transit:4,other:1},
+    sub:{bonus:100000,spend:15000,months:3},
+    benefits:[
+      {id:"hotel",name:"Hotel Collection Credit ($100 credit per 2-night stay)",value:150,period:"annual",group:"amex-hotel-collection"},
+    ],
+  },
+  "amex-bbp": {
+    id:"amex-bbp",name:"The Blue Business® Plus Credit Card from American Express",issuer:"American Express",short:"Blue Business Plus",
+    annualFee:0,g1:"#003580",g2:"#0055C8",rewardType:"points",currency:"MR Points",cpp:0.02,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:15000,spend:3000,months:3},
+    benefits:[],
+  },
+  "amex-bbc": {
+    id:"amex-bbc",name:"The Blue Business Cash™ Card from American Express",issuer:"American Express",short:"Blue Business Cash",
+    annualFee:0,g1:"#00509A",g2:"#0070D8",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:250,spend:3000,months:3},
+    benefits:[],
+  },
+  "amex-delta-reserve-biz": {
+    id:"amex-delta-reserve-biz",name:"Delta SkyMiles® Reserve Business American Express Card",issuer:"American Express",short:"Delta Reserve Biz",
+    annualFee:650,g1:"#1B2A5A",g2:"#2E4A9A",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:5000,months:6},
+    benefits:[
+      {id:"companion",name:"Companion Certificate (Domestic First Class)", value:500,period:"annual",group:"delta-companion"},
+      {id:"lounge",  name:"Delta Sky Club Access",                         value:0,  period:"annual"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",                   value:100,period:"annual",group:"global-entry"},
+      {id:"credit",  name:"Delta Stays Credit",                            value:200,period:"annual",group:"delta-stays"},
+    ],
+  },
+  "amex-delta-platinum-biz": {
+    id:"amex-delta-platinum-biz",name:"Delta SkyMiles® Platinum Business American Express Card",issuer:"American Express",short:"Delta Platinum Biz",
+    annualFee:350,g1:"#2A3A6A",g2:"#3A54A0",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:false,
+    rates:{flights:3,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:3000,months:6},
+    benefits:[
+      {id:"companion",name:"Companion Certificate (Domestic Main Cabin)",value:300,period:"annual",group:"delta-companion"},
+      {id:"credit",  name:"Delta Stays Credit",                          value:150,period:"annual",group:"delta-stays"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",                 value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "amex-delta-gold-biz": {
+    id:"amex-delta-gold-biz",name:"Delta SkyMiles® Gold Business American Express Card",issuer:"American Express",short:"Delta Gold Biz",
+    annualFee:150,g1:"#8B6914",g2:"#C49A22",rewardType:"miles",currency:"SkyMiles",cpp:0.012,
+    mlaEligible:false,
+    rates:{flights:2,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:3000,months:6},
+    benefits:[
+      {id:"credit",name:"Delta Stays Credit",value:100,period:"annual",group:"delta-stays"},
+    ],
+  },
+  "amex-hilton-biz": {
+    id:"amex-hilton-biz",name:"Hilton Honors American Express Business Card",issuer:"American Express",short:"Hilton Biz",
+    annualFee:195,g1:"#1E3D5C",g2:"#2B5B8A",rewardType:"points",currency:"Hilton Honors Points",cpp:0.005,
+    mlaEligible:false,
+    rates:{flights:3,hotels:12,dining:5,groceries:5,gas:5,streaming:3,transit:3,other:3},
+    sub:{bonus:130000,spend:3000,months:6},
+    benefits:[
+      {id:"credit",  name:"Hilton Credit",                value:60, period:"quarterly",group:"hilton-credit"},
+      {id:"reward",  name:"Free Weekend Night Reward",    value:300,period:"annual",   group:"hilton-night"},
+      {id:"lounge",  name:"Priority Pass Select (10 visits)",value:0,period:"annual"},
+    ],
+  },
+  "amex-bonvoy-biz": {
+    id:"amex-bonvoy-biz",name:"Marriott Bonvoy Business® American Express® Card",issuer:"American Express",short:"Bonvoy Biz Amex",
+    annualFee:125,g1:"#6B2222",g2:"#A03030",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:false,
+    rates:{flights:2,hotels:6,dining:4,groceries:2,gas:4,streaming:2,transit:2,other:2},
+    sub:{bonus:75000,spend:3000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 35k pts)",value:200,period:"annual",group:"bonvoy-night"},
+    ],
+  },
+
+  // ── CHASE PERSONAL ────────────────────────────────────────────────
+  "chase-freedom-rise": {
+    id:"chase-freedom-rise",name:"Chase Freedom Rise℠",issuer:"Chase",short:"Freedom Rise",
+    annualFee:0,g1:"#182860",g2:"#284898",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1.5,hotels:1.5,dining:1.5,groceries:1.5,gas:1.5,streaming:1.5,transit:1.5,other:1.5},
+    sub:{bonus:25,spend:500,months:3},
+    benefits:[],
+  },
+  "chase-united-explorer": {
+    id:"chase-united-explorer",name:"United℠ Explorer Card",issuer:"Chase",short:"United Explorer",
+    annualFee:95,g1:"#002244",g2:"#0033AA",rewardType:"miles",currency:"United Miles",cpp:0.013,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:3000,months:3},
+    benefits:[
+      {id:"ge",    name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+      {id:"lounge",name:"2 United Club One-Time Passes",value:60,period:"annual",group:"united-lounge"},
+    ],
+  },
+  "chase-united-quest": {
+    id:"chase-united-quest",name:"United Quest℠ Card",issuer:"Chase",short:"United Quest",
+    annualFee:250,g1:"#001A3A",g2:"#002A80",rewardType:"miles",currency:"United Miles",cpp:0.013,
+    mlaEligible:true,
+    rates:{flights:3,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:70000,spend:4000,months:3},
+    benefits:[
+      {id:"credit",name:"United Travel Credit (statement credit on United purchases)",value:125,period:"annual",group:"united-credit"},
+      {id:"ge",    name:"Global Entry / TSA PreCheck",                                value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "chase-united-club": {
+    id:"chase-united-club",name:"United Club℠ Infinite Card",issuer:"Chase",short:"United Club Infinite",
+    annualFee:525,g1:"#001530",g2:"#002060",rewardType:"miles",currency:"United Miles",cpp:0.013,
+    mlaEligible:true,
+    rates:{flights:4,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:80000,spend:5000,months:3},
+    benefits:[
+      {id:"lounge",name:"United Club Membership",              value:650,period:"annual",group:"united-club"},
+      {id:"ge",    name:"Global Entry / TSA PreCheck",         value:100,period:"annual",group:"global-entry"},
+      {id:"credit",name:"Primary Rental Car Coverage (value)", value:0,  period:"annual"},
+    ],
+  },
+  "chase-united-gateway": {
+    id:"chase-united-gateway",name:"United Gateway℠ Card",issuer:"Chase",short:"United Gateway",
+    annualFee:0,g1:"#003366",g2:"#004FAA",rewardType:"miles",currency:"United Miles",cpp:0.013,
+    mlaEligible:true,
+    rates:{flights:2,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:20000,spend:1000,months:3},
+    benefits:[],
+  },
+  "chase-sw-plus": {
+    id:"chase-sw-plus",name:"Southwest Rapid Rewards® Plus Credit Card",issuer:"Chase",short:"SW Plus",
+    annualFee:69,g1:"#304CB2",g2:"#304CB2",rewardType:"points",currency:"SW Rapid Rewards",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"anniversary",name:"3,000 Anniversary Bonus Points (~$42)",value:42,period:"annual",group:"sw-anniversary"},
+    ],
+  },
+  "chase-sw-premier": {
+    id:"chase-sw-premier",name:"Southwest Rapid Rewards® Premier Credit Card",issuer:"Chase",short:"SW Premier",
+    annualFee:99,g1:"#2A42A0",g2:"#2A42A0",rewardType:"points",currency:"SW Rapid Rewards",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"anniversary",name:"6,000 Anniversary Bonus Points (~$84)",value:84,period:"annual",group:"sw-anniversary"},
+    ],
+  },
+  "chase-sw-priority": {
+    id:"chase-sw-priority",name:"Southwest Rapid Rewards® Priority Credit Card",issuer:"Chase",short:"SW Priority",
+    annualFee:149,g1:"#243898",g2:"#243898",rewardType:"points",currency:"SW Rapid Rewards",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:1000,months:3},
+    benefits:[
+      {id:"credit",      name:"Southwest Travel Credit",               value:75, period:"annual",  group:"sw-travel"},
+      {id:"anniversary", name:"7,500 Anniversary Bonus Points (~$105)",value:105,period:"annual",  group:"sw-anniversary"},
+      {id:"upgraded",    name:"4 Upgraded Boardings per year",         value:60, period:"annual",  group:"sw-boarding"},
+    ],
+  },
+  "chase-british-airways": {
+    id:"chase-british-airways",name:"British Airways Visa Signature® Card",issuer:"Chase",short:"British Airways Visa",
+    annualFee:95,g1:"#075AAA",g2:"#0A80EE",rewardType:"points",currency:"Avios",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:85000,spend:5000,months:3},
+    benefits:[
+      {id:"companion",name:"Travel Together Ticket (spend $30k/yr)",value:600,period:"annual",group:"ba-companion"},
+    ],
+  },
+  "chase-iberia": {
+    id:"chase-iberia",name:"Iberia Visa Signature® Card",issuer:"Chase",short:"Iberia Visa",
+    annualFee:95,g1:"#B80000",g2:"#E80000",rewardType:"points",currency:"Avios",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:75000,spend:5000,months:3},
+    benefits:[],
+  },
+  "chase-aer-lingus": {
+    id:"chase-aer-lingus",name:"Aer Lingus Visa Signature® Card",issuer:"Chase",short:"Aer Lingus Visa",
+    annualFee:95,g1:"#006B3C",g2:"#008C50",rewardType:"points",currency:"Avios",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:100000,spend:5000,months:3},
+    benefits:[],
+  },
+  "chase-aeroplan": {
+    id:"chase-aeroplan",name:"Aeroplan® Credit Card",issuer:"Chase",short:"Aeroplan",
+    annualFee:95,g1:"#CC0000",g2:"#EE0000",rewardType:"points",currency:"Aeroplan Points",cpp:0.015,
+    mlaEligible:true,
+    rates:{flights:3,hotels:1,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:70000,spend:3000,months:3},
+    benefits:[
+      {id:"credit",name:"Global Entry / TSA PreCheck",value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "chase-bonvoy-boundless": {
+    id:"chase-bonvoy-boundless",name:"Marriott Bonvoy Boundless® Credit Card",issuer:"Chase",short:"Bonvoy Boundless",
+    annualFee:95,g1:"#8B2020",g2:"#C03030",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:true,
+    rates:{flights:2,hotels:6,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:125000,spend:5000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 35k pts)",value:200,period:"annual",group:"bonvoy-night"},
+    ],
+  },
+  "chase-bonvoy-bountiful": {
+    id:"chase-bonvoy-bountiful",name:"Marriott Bonvoy Bountiful™ Credit Card",issuer:"Chase",short:"Bonvoy Bountiful",
+    annualFee:250,g1:"#7A1C1C",g2:"#B02A2A",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:true,
+    rates:{flights:2,hotels:6,dining:4,groceries:4,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:85000,spend:5000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 50k pts)",value:250,period:"annual",group:"bonvoy-night"},
+    ],
+  },
+  "chase-hyatt": {
+    id:"chase-hyatt",name:"World of Hyatt Credit Card",issuer:"Chase",short:"World of Hyatt",
+    annualFee:95,g1:"#1A1A2E",g2:"#2A2A50",rewardType:"points",currency:"World of Hyatt Points",cpp:0.017,
+    mlaEligible:true,
+    rates:{flights:1,hotels:4,dining:2,groceries:1,gas:1,streaming:1,transit:2,other:1},
+    sub:{bonus:30000,spend:3000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (Cat 1–4)",                value:150,period:"annual",group:"hyatt-night"},
+      {id:"disc",  name:"Discoverist Status + 5 qualifying nights", value:0,  period:"annual"},
+    ],
+  },
+  "chase-ihg-premier": {
+    id:"chase-ihg-premier",name:"IHG One Rewards Premier Credit Card",issuer:"Chase",short:"IHG Premier",
+    annualFee:99,g1:"#005A8B",g2:"#0080C0",rewardType:"points",currency:"IHG One Rewards Points",cpp:0.005,
+    mlaEligible:true,
+    rates:{flights:3,hotels:26,dining:3,groceries:3,gas:3,streaming:1,transit:1,other:3},
+    sub:{bonus:140000,spend:3000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 40k pts)",    value:200,period:"annual",  group:"ihg-night"},
+      {id:"credit",name:"$50 United Airlines travel credit",   value:50, period:"annual",  group:"ihg-united"},
+      {id:"ge",    name:"Global Entry / TSA PreCheck",         value:100,period:"annual",  group:"global-entry"},
+    ],
+  },
+  "chase-ihg-traveler": {
+    id:"chase-ihg-traveler",name:"IHG One Rewards Traveler Credit Card",issuer:"Chase",short:"IHG Traveler",
+    annualFee:0,g1:"#0066A0",g2:"#0088CC",rewardType:"points",currency:"IHG One Rewards Points",cpp:0.005,
+    mlaEligible:true,
+    rates:{flights:2,hotels:17,dining:2,groceries:2,gas:2,streaming:1,transit:1,other:2},
+    sub:{bonus:80000,spend:2000,months:3},
+    benefits:[],
+  },
+  "chase-prime": {
+    id:"chase-prime",name:"Prime Visa",issuer:"Chase",short:"Prime Visa",
+    annualFee:0,g1:"#232F3E",g2:"#FF9900",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:5,gas:2,streaming:2,transit:2,other:1},
+    sub:{bonus:200,spend:0,months:1},
+    benefits:[],
+  },
+  "chase-amazon": {
+    id:"chase-amazon",name:"Amazon Rewards Visa Signature Card",issuer:"Chase",short:"Amazon Rewards Visa",
+    annualFee:0,g1:"#2A2A2A",g2:"#FF9900",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:2,groceries:3,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:100,spend:0,months:1},
+    benefits:[],
+  },
+  "chase-disney": {
+    id:"chase-disney",name:"Disney® Visa® Card",issuer:"Chase",short:"Disney Visa",
+    annualFee:0,g1:"#003087",g2:"#0050BD",rewardType:"cashback",currency:"Disney Rewards Dollars",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:150,spend:500,months:3},
+    benefits:[],
+  },
+  "chase-disney-premier": {
+    id:"chase-disney-premier",name:"Disney® Premier Visa® Card",issuer:"Chase",short:"Disney Premier Visa",
+    annualFee:49,g1:"#001F6B",g2:"#003399",rewardType:"cashback",currency:"Disney Rewards Dollars",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:5,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:400,spend:1000,months:3},
+    benefits:[],
+  },
+  "chase-doordash": {
+    id:"chase-doordash",name:"DoorDash Rewards Mastercard®",issuer:"Chase",short:"DoorDash Mastercard",
+    annualFee:0,g1:"#FF3008",g2:"#FF5530",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:4,groceries:3,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:100,spend:500,months:2},
+    benefits:[
+      {id:"dashpass",name:"DashPass Membership",value:0,period:"annual"},
+    ],
+  },
+  "chase-instacart": {
+    id:"chase-instacart",name:"Instacart Mastercard®",issuer:"Chase",short:"Instacart Mastercard",
+    annualFee:0,g1:"#43B02A",g2:"#5CCC3B",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:2,hotels:2,dining:2,groceries:5,gas:2,streaming:2,transit:1,other:1},
+    sub:{bonus:100,spend:0,months:1},
+    benefits:[
+      {id:"credit",name:"Instacart+ Membership Credit",value:99,period:"annual",group:"instacart-plus"},
+    ],
+  },
+
+  // ── CHASE BUSINESS ────────────────────────────────────────────────
+  "chase-ink-premier": {
+    id:"chase-ink-premier",name:"Ink Business Premier® Credit Card",issuer:"Chase",short:"Ink Premier",
+    annualFee:195,g1:"#101010",g2:"#303030",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:5,hotels:5,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:1000,spend:10000,months:3},
+    benefits:[
+      {id:"credit",name:"Travel Credit",value:400,period:"annual",group:"ink-premier-travel"},
+    ],
+  },
+  "chase-united-club-biz": {
+    id:"chase-united-club-biz",name:"United Club℠ Business Card",issuer:"Chase",short:"United Club Biz",
+    annualFee:450,g1:"#001530",g2:"#002060",rewardType:"miles",currency:"United Miles",cpp:0.013,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:75000,spend:5000,months:3},
+    benefits:[
+      {id:"lounge",name:"United Club Membership",value:650,period:"annual",group:"united-club"},
+    ],
+  },
+  "chase-sw-premier-biz": {
+    id:"chase-sw-premier-biz",name:"Southwest Rapid Rewards® Premier Business Credit Card",issuer:"Chase",short:"SW Premier Biz",
+    annualFee:99,g1:"#2A42A0",g2:"#2A42A0",rewardType:"points",currency:"SW Rapid Rewards",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:3,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:60000,spend:3000,months:3},
+    benefits:[
+      {id:"anniversary",name:"6,000 Anniversary Bonus Points (~$84)",value:84,period:"annual",group:"sw-anniversary"},
+    ],
+  },
+  "chase-sw-performance-biz": {
+    id:"chase-sw-performance-biz",name:"Southwest Rapid Rewards® Performance Business Credit Card",issuer:"Chase",short:"SW Performance Biz",
+    annualFee:199,g1:"#243898",g2:"#243898",rewardType:"points",currency:"SW Rapid Rewards",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:4,hotels:3,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:80000,spend:5000,months:3},
+    benefits:[
+      {id:"anniversary",name:"9,000 Anniversary Bonus Points (~$126)",value:126,period:"annual",group:"sw-anniversary"},
+      {id:"wifi",       name:"365 In-Flight Wi-Fi Credits",           value:75, period:"annual",group:"sw-wifi"},
+      {id:"upgrade",    name:"4 Upgraded Boardings per year",         value:60, period:"annual",group:"sw-boarding"},
+      {id:"ge",         name:"Global Entry / TSA PreCheck",           value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+  "chase-bonvoy-biz": {
+    id:"chase-bonvoy-biz",name:"Marriott Bonvoy Business® Credit Card",issuer:"Chase",short:"Bonvoy Biz Chase",
+    annualFee:125,g1:"#7A1C1C",g2:"#B02A2A",rewardType:"points",currency:"Marriott Bonvoy Points",cpp:0.008,
+    mlaEligible:false,
+    rates:{flights:2,hotels:6,dining:4,groceries:2,gas:4,streaming:2,transit:2,other:2},
+    sub:{bonus:75000,spend:3000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 35k pts)",value:200,period:"annual",group:"bonvoy-night"},
+    ],
+  },
+  "chase-hyatt-biz": {
+    id:"chase-hyatt-biz",name:"World of Hyatt Business Credit Card",issuer:"Chase",short:"Hyatt Biz",
+    annualFee:199,g1:"#1A1A2E",g2:"#2A2A50",rewardType:"points",currency:"World of Hyatt Points",cpp:0.017,
+    mlaEligible:false,
+    rates:{flights:2,hotels:9,dining:2,groceries:2,gas:2,streaming:2,transit:2,other:2},
+    sub:{bonus:60000,spend:5000,months:3},
+    benefits:[
+      {id:"spend",name:"Hyatt Statement Credits ($50/quarter on Hyatt purchases)",value:50,period:"quarterly",group:"hyatt-spend"},
+    ],
+  },
+  "chase-ihg-premier-biz": {
+    id:"chase-ihg-premier-biz",name:"IHG One Rewards Premier Business Credit Card",issuer:"Chase",short:"IHG Premier Biz",
+    annualFee:99,g1:"#005A8B",g2:"#0080C0",rewardType:"points",currency:"IHG One Rewards Points",cpp:0.005,
+    mlaEligible:false,
+    rates:{flights:3,hotels:26,dining:3,groceries:3,gas:3,streaming:1,transit:1,other:3},
+    sub:{bonus:140000,spend:3000,months:3},
+    benefits:[
+      {id:"reward",name:"Free Night Award (up to 40k pts)",value:200,period:"annual",group:"ihg-night"},
+      {id:"ge",    name:"Global Entry / TSA PreCheck",     value:100,period:"annual",group:"global-entry"},
+    ],
+  },
+
+  // ── CITI ──────────────────────────────────────────────────────────
+  "citi-strata-elite": {
+    id:"citi-strata-elite",name:"Citi Strata Elite℠ Card",issuer:"Citi",short:"Strata Elite",
+    annualFee:595,g1:"#00174A",g2:"#002880",rewardType:"points",currency:"ThankYou Points",cpp:0.017,
+    mlaEligible:true,
+    rates:{flights:10,hotels:10,dining:3,groceries:3,gas:3,streaming:3,transit:3,other:1},
+    sub:{bonus:75000,spend:4000,months:3},
+    benefits:[
+      {id:"travel",  name:"Travel Credit (non-airline)",              value:325,period:"annual",  group:"citi-travel"},
+      {id:"lounge",  name:"Priority Pass Select",                     value:0,  period:"annual"},
+      {id:"ge",      name:"Global Entry / TSA PreCheck",              value:120,period:"annual",  group:"global-entry"},
+      {id:"hotel",   name:"Hotel Stay Credit ($250 off $500+ stay)", value:250,period:"annual",  group:"citi-hotel"},
+    ],
+  },
+  "citi-rewards-plus": {
+    id:"citi-rewards-plus",name:"Citi Rewards+® Card",issuer:"Citi",short:"Rewards+",
+    annualFee:0,g1:"#003098",g2:"#0045CC",rewardType:"points",currency:"ThankYou Points",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:1,groceries:2,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:20000,spend:1500,months:3},
+    benefits:[],
+  },
+  "citi-custom-cash": {
+    id:"citi-custom-cash",name:"Citi Custom Cash® Card",issuer:"Citi",short:"Custom Cash",
+    annualFee:0,g1:"#002878",g2:"#003EAA",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:5,groceries:5,gas:5,streaming:5,transit:5,other:1},
+    sub:{bonus:200,spend:1500,months:6},
+    benefits:[],
+  },
+  "citi-aa-mileup": {
+    id:"citi-aa-mileup",name:"Citi® / AAdvantage® MileUp®",issuer:"Citi",short:"AA MileUp",
+    annualFee:0,g1:"#CC0000",g2:"#EE1111",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:2,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:15000,spend:500,months:3},
+    benefits:[],
+  },
+  "citi-aa-executive": {
+    id:"citi-aa-executive",name:"Citi® / AAdvantage® Executive World Elite Mastercard®",issuer:"Citi",short:"AA Executive",
+    annualFee:595,g1:"#AA0000",g2:"#DD1111",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:4,hotels:2,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    sub:{bonus:70000,spend:7000,months:3},
+    benefits:[
+      {id:"lounge",name:"Admirals Club Membership",                 value:850,period:"annual",group:"aa-admirals"},
+      {id:"credit",name:"Inflight Wi-Fi / AAdvantage Miles Credit", value:120,period:"annual",group:"aa-wifi"},
+    ],
+  },
+  "citi-aa-platinum-select": {
+    id:"citi-aa-platinum-select",name:"Citi® / AAdvantage® Platinum Select® World Elite Mastercard®",issuer:"Citi",short:"AA Platinum Select",
+    annualFee:99,g1:"#BB1111",g2:"#DD2222",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:true,
+    rates:{flights:2,hotels:1,dining:2,groceries:1,gas:2,streaming:1,transit:1,other:1},
+    sub:{bonus:50000,spend:2500,months:3},
+    benefits:[
+      {id:"disc",name:"First Checked Bag Free (up to 4 companions)",value:35,period:"annual",group:"aa-bag"},
+    ],
+  },
+  "citi-costco": {
+    id:"citi-costco",name:"Costco Anywhere Visa® Card by Citi",issuer:"Citi",short:"Costco Visa",
+    annualFee:0,g1:"#005DAA",g2:"#0076D6",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:3,hotels:3,dining:3,groceries:2,gas:4,streaming:3,transit:3,other:1},
+    sub:{bonus:0,spend:0,months:3},
+    benefits:[],
+  },
+  "citi-aa-biz": {
+    id:"citi-aa-biz",name:"CitiBusiness® / AAdvantage® Platinum Select® Mastercard®",issuer:"Citi",short:"AA Biz",
+    annualFee:99,g1:"#AA0A0A",g2:"#CC1A1A",rewardType:"miles",currency:"AAdvantage Miles",cpp:0.014,
+    mlaEligible:false,
+    rates:{flights:2,hotels:2,dining:2,groceries:1,gas:2,streaming:1,transit:2,other:1},
+    sub:{bonus:65000,spend:4000,months:4},
+    benefits:[
+      {id:"disc",name:"First Checked Bag Free",value:35,period:"annual",group:"aa-bag"},
+    ],
+  },
+  "citi-costco-biz": {
+    id:"citi-costco-biz",name:"Costco Anywhere Visa® Business Card by Citi",issuer:"Citi",short:"Costco Biz Visa",
+    annualFee:0,g1:"#0055AA",g2:"#006ED9",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:false,
+    rates:{flights:3,hotels:3,dining:3,groceries:2,gas:4,streaming:3,transit:3,other:1},
+    sub:{bonus:0,spend:0,months:3},
+    benefits:[],
+  },
 };
 
 // ── BENEFIT HELPERS ───────────────────────────────────────────────
@@ -274,10 +1386,11 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 
 function calcOffset(uc,mlaGlobal) {
   const card=DB[uc.cardId]; if(!card) return{fee:0,saved:0,pct:0};
+  if(card.annualFee===0) return{fee:0,saved:0,pct:100,noFee:true};
   const waived=(mlaGlobal&&card.mlaEligible)||uc.mlaWaiver;
   if(waived) return{fee:0,saved:card.annualFee,pct:100,waived:true};
   const saved=card.benefits.reduce((s,b)=>s+bUsedValue(b,uc.benefitUsage?.[b.id]),0);
-  const pct=card.annualFee>0?Math.min(100,(saved/card.annualFee)*100):100;
+  const pct=Math.min(100,(saved/card.annualFee)*100);
   return{fee:Math.max(0,card.annualFee-saved),saved,pct};
 }
 
@@ -479,7 +1592,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
   const [bu,setBu]=useState(uc.benefitUsage||{});
   if(!card) return null;
 
-  const isWaived=mlaGlobal&&card.mlaEligible;
+  const isWaived=card.annualFee>0&&mlaGlobal&&card.mlaEligible;
   const off=calcOffset({...uc,benefitUsage:bu},mlaGlobal);
   const sub=subInfo(uc);
   const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
@@ -530,6 +1643,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
       <div style={{padding:"18px 22px"}}>
         {tab==="overview"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {card.annualFee>0&&(
             <div style={{background:C.s2,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
                 <span style={{fontSize:13,color:C.text2}}>Annual Fee Offset</span>
@@ -543,6 +1657,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                 {off.pct>=100?`✓ Fully offset — saving $${off.saved-card.annualFee} extra`:`Effective annual fee: $${off.fee}`}
               </div>}
             </div>
+            )}
             <div style={{fontSize:10.5,color:C.text3,fontWeight:600,letterSpacing:0.9,textTransform:"uppercase",marginBottom:-4}}>Earn Rates</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(118px,1fr))",gap:8}}>
               {Object.entries(CATS).map(([cat,meta])=>{
@@ -707,7 +1822,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                 </div>
               </div>
             )}
-            {!isWaived&&!card.mlaEligible&&(
+            {card.annualFee>0&&!isWaived&&!card.mlaEligible&&(
               <div style={{background:C.s2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
                 <div style={{fontSize:13,color:C.text3}}>
                   MLA waiver is not applicable (business card or ineligible issuer).
@@ -1146,6 +2261,7 @@ export default function App() {
                   </div>
                   {cards.map(uc=>{
                     const card=DB[uc.cardId]; if(!card) return null;
+                    if(card.annualFee===0) return null;
                     const off=calcOffset(uc,mlaGlobal);
                     return(
                       <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} style={{
@@ -1450,7 +2566,7 @@ export default function App() {
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {cards.map(uc=>{
-                        const card=DB[uc.cardId]; if(!card) return null;
+                        const card=DB[uc.cardId]; if(!card||card.annualFee===0) return null;
                         return(
                           <div key={uc.instanceId} style={{
                             display:"flex",alignItems:"center",gap:10,padding:"7px 10px",borderRadius:9,
