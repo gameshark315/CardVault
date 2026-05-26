@@ -42,7 +42,7 @@ const DB = {
     benefits:[
       {id:"saks",       name:"Saks Fifth Ave Credit",          value:50,  period:"semiannual", group:"saks"},
       {id:"airline",    name:"Airline Fee Credit",              value:200, period:"annual",     group:"amex-airline"},
-      {id:"uber-cash",  name:"Uber Cash",                      value:15,  period:"monthly",    group:"uber-cash"},
+      {id:"uber-cash",  name:"Uber Cash ($35 in December)",     value:15,  period:"monthly",    group:"uber-cash", decemberBonus:20},
       {id:"uber-one",   name:"Uber One Membership Credit",     value:10,  period:"monthly",    group:"uber-one"},
       {id:"resy",       name:"Resy Dining Credit",             value:100, period:"quarterly",  group:"amex-resy"},
       {id:"digital",    name:"Digital Entertainment Credit",   value:25,  period:"monthly",    group:"amex-digital"},
@@ -738,7 +738,7 @@ const DB = {
   "bilt-blue": {
     id:"bilt-blue",name:"Bilt Mastercard® (Blue)",issuer:"Bilt / Wells Fargo",short:"Bilt Blue",
     annualFee:0,g1:"#1E2840",g2:"#2E3E60",rewardType:"points",currency:"Bilt Points",cpp:0.015,
-    mlaEligible:false,
+    mlaEligible:true,
     rates:{flights:2,hotels:2,dining:2,groceries:1,gas:1,streaming:1,transit:1,other:1},
     sub:{bonus:0,spend:0,months:12},
     benefits:[],
@@ -746,7 +746,7 @@ const DB = {
   "bilt-obsidian": {
     id:"bilt-obsidian",name:"Bilt Mastercard® (Obsidian)",issuer:"Bilt / Wells Fargo",short:"Bilt Obsidian",
     annualFee:95,g1:"#0A0A0A",g2:"#202020",rewardType:"points",currency:"Bilt Points",cpp:0.015,
-    mlaEligible:false,
+    mlaEligible:true,
     rates:{flights:2,hotels:2,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
     sub:{bonus:0,spend:0,months:12},
     benefits:[
@@ -756,7 +756,7 @@ const DB = {
   "bilt-palladium": {
     id:"bilt-palladium",name:"Bilt Mastercard® (Palladium)",issuer:"Bilt / Wells Fargo",short:"Bilt Palladium",
     annualFee:495,g1:"#181818",g2:"#303030",rewardType:"points",currency:"Bilt Points",cpp:0.015,
-    mlaEligible:false,
+    mlaEligible:true,
     rates:{flights:3,hotels:3,dining:3,groceries:2,gas:2,streaming:2,transit:2,other:2},
     sub:{bonus:0,spend:0,months:12},
     benefits:[
@@ -1355,8 +1355,9 @@ const DB = {
 };
 
 // ── BENEFIT HELPERS ───────────────────────────────────────────────
-const bTotalValue = b => b.value*(PCOUNT[b.period||"annual"]||1);
+const bTotalValue = b => b.value*(PCOUNT[b.period||"annual"]||1)+(b.decemberBonus||0);
 
+const bSlotMax = (b,i) => b.value+(b.decemberBonus&&i===11?b.decemberBonus:0);
 const bUsedValue = (b,usage) => {
   const p=b.period||"annual";
   if(p==="annual"){
@@ -1364,9 +1365,10 @@ const bUsedValue = (b,usage) => {
     return usage?b.value:0;
   }
   const arr=Array.isArray(usage)?usage:[];
-  return arr.reduce((s,v)=>{
-    if(typeof v==="number") return s+Math.min(v,b.value);
-    return s+(v?b.value:0);
+  return arr.reduce((s,v,i)=>{
+    const cap=bSlotMax(b,i);
+    if(typeof v==="number") return s+Math.min(v,cap);
+    return s+(v?cap:0);
   },0);
 };
 
@@ -1383,6 +1385,61 @@ const bSetAmount = (b,current,idx,amount) => {
 };
 
 const uid=()=>Math.random().toString(36).slice(2,10);
+
+// ── APPLICATION VELOCITY RULES ────────────────────────────────────
+const VELOCITY_RULES={
+  "American Express":[
+    {label:"2/90 Rule",limit:2,days:90,scope:"issuer",note:"Max 2 Amex personal cards in any 90-day window"},
+  ],
+  "Chase":[
+    {label:"5/24 Rule",limit:5,days:730,scope:"all",note:"Approvals blocked above 5 new accounts in 24 months"},
+  ],
+  "Citi":[
+    {label:"1/8 Rule", limit:1,days:8,  scope:"issuer",note:"Only 1 Citi card per 8 days"},
+    {label:"2/65 Rule",limit:2,days:65, scope:"issuer",note:"Max 2 Citi cards in any 65-day window"},
+  ],
+  "Capital One":[
+    {label:"1/6mo Rule",limit:1,days:180,scope:"issuer",note:"1 Capital One card per 6 months"},
+  ],
+  "Bank of America":[
+    {label:"2/3mo Rule", limit:2,days:90, scope:"issuer",note:"Max 2 BofA cards in 90 days"},
+    {label:"3/12mo Rule",limit:3,days:365,scope:"issuer",note:"Max 3 BofA cards in 12 months"},
+  ],
+  "Barclays":[
+    {label:"1/6mo Rule",limit:1,days:180,scope:"issuer",note:"1 Barclays card per 6 months"},
+  ],
+  "U.S. Bank":[
+    {label:"1/12mo Rule",limit:1,days:365,scope:"issuer",note:"1 U.S. Bank card per 12 months"},
+  ],
+  "Wells Fargo":[
+    {label:"1/6mo Rule",limit:1,days:180,scope:"issuer",note:"1 Wells Fargo card per 6 months"},
+  ],
+  "Bilt / Wells Fargo":[
+    {label:"1/6mo Rule",limit:1,days:180,scope:"issuer",note:"1 Bilt card per 6 months"},
+  ],
+  "Discover":[
+    {label:"1/12mo Rule",limit:1,days:365,scope:"issuer",note:"1 Discover card per 12 months"},
+  ],
+};
+
+function getVelocity(issuer,allCards){
+  const rules=VELOCITY_RULES[issuer];
+  if(!rules) return[];
+  const today=Date.now();
+  return rules.map(rule=>{
+    const cutoff=today-rule.days*86400000;
+    const count=allCards.filter(uc=>{
+      const od=uc.openedDate||uc.addedDate;
+      if(!od) return false;
+      const d=new Date(od).getTime();
+      if(d<cutoff) return false;
+      if(rule.scope==="all") return true;
+      return DB[uc.cardId]?.issuer===issuer;
+    }).length;
+    const status=count>=rule.limit?"exceeded":count===rule.limit-1?"warning":"ok";
+    return{...rule,count,status};
+  });
+}
 
 function calcOffset(uc,mlaGlobal) {
   const card=DB[uc.cardId]; if(!card) return{fee:0,saved:0,pct:0};
@@ -1409,11 +1466,19 @@ function subInfo(uc) {
 }
 
 function useStored(key,init) {
-  const [val,setVal]=useState(init);
-  useEffect(()=>{
-    (async()=>{try{const r=await window.storage.get(key);if(r?.value)setVal(JSON.parse(r.value));}catch{}})();
+  const [val,setVal]=useState(()=>{
+    try{
+      const s=localStorage.getItem(key);
+      return s!==null?JSON.parse(s):init;
+    }catch{return init;}
+  });
+  const set=useCallback(v=>{
+    setVal(prev=>{
+      const next=typeof v==="function"?v(prev):v;
+      try{localStorage.setItem(key,JSON.stringify(next));}catch{}
+      return next;
+    });
   },[key]);
-  const set=useCallback(v=>{setVal(v);window.storage.set(key,JSON.stringify(v)).catch(()=>{});},[key]);
   return[val,set];
 }
 
@@ -1537,8 +1602,10 @@ function PeriodChips({benefit,usage,onSetAmount}) {
     return v?benefit.value:0;
   };
 
+  const slotMax=i=>bSlotMax(benefit,i);
+
   const commit=i=>{
-    const amt=Math.max(0,Math.min(Number(inputVal)||0,benefit.value));
+    const amt=Math.max(0,Math.min(Number(inputVal)||0,slotMax(i)));
     onSetAmount(i,amt);
     setEditing(null);
   };
@@ -1548,7 +1615,8 @@ function PeriodChips({benefit,usage,onSetAmount}) {
       <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"flex-start"}}>
         {labels.map((lbl,i)=>{
           const amt=getAmount(i);
-          const full=amt>=benefit.value;
+          const max=slotMax(i);
+          const full=amt>=max;
           const partial=amt>0&&!full;
           const isEd=editing===i;
           return(
@@ -1568,7 +1636,7 @@ function PeriodChips({benefit,usage,onSetAmount}) {
                     autoFocus
                     style={{width:55,background:C.s2,border:`1px solid ${C.border2}`,borderRadius:6,
                       padding:"3px 6px",color:C.text,fontSize:11,outline:"none"}}/>
-                  <span style={{fontSize:10,color:C.text3}}>/ ${benefit.value}</span>
+                  <span style={{fontSize:10,color:C.text3}}>/ ${max}</span>
                 </div>
               )}
             </div>
@@ -1580,7 +1648,7 @@ function PeriodChips({benefit,usage,onSetAmount}) {
 }
 
 // ── CARD DETAIL ───────────────────────────────────────────────────
-function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
+function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
   const card=DB[uc.cardId];
   const [tab,setTab]=useState("overview");
   const [spendVal,setSpendVal]=useState(String(uc.subSpend||0));
@@ -1588,7 +1656,9 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
   const [subTargetVal,setSubTargetVal]=useState(String(uc.subTarget!=null?uc.subTarget:card?.sub.spend||0));
   const [subMonthsVal,setSubMonthsVal]=useState(String(uc.subMonths!=null?uc.subMonths:card?.sub.months||0));
   const [editingSub,setEditingSub]=useState(false);
+  const [addingNewSub,setAddingNewSub]=useState(false);
   const [nick,setNick]=useState(uc.nickname||"");
+  const [openedDate,setOpenedDate]=useState(uc.openedDate||uc.addedDate||new Date().toISOString().slice(0,10));
   const [bu,setBu]=useState(uc.benefitUsage||{});
   if(!card) return null;
 
@@ -1596,6 +1666,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
   const off=calcOffset({...uc,benefitUsage:bu},mlaGlobal);
   const sub=subInfo(uc);
   const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
+  const velocity=useMemo(()=>getVelocity(card.issuer,allCards||[]),[card.issuer,allCards]);
 
   const setBenefitAmount=(id,idx,amt)=>{
     const b=card.benefits.find(x=>x.id===id);
@@ -1612,7 +1683,15 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
     const months=Number(subMonthsVal)||card.sub.months;
     onUpdate({...uc,subSpend:Number(spendVal)||0,subBonus:bonus,subTarget:target,subMonths:months});
   };
-  const saveSettings=()=>{onUpdate({...uc,nickname:nick,benefitUsage:bu});onClose();};
+  const saveNewSub=()=>{
+    const bonus=Number(subBonusVal)||card.sub?.bonus||0;
+    const target=Number(subTargetVal)||card.sub?.spend||0;
+    const months=Number(subMonthsVal)||card.sub?.months||3;
+    onUpdate({...uc,noSub:false,subBonus:bonus,subTarget:target,subMonths:months,subSpend:0});
+    setAddingNewSub(false);
+  };
+  const removeSub=()=>onUpdate({...uc,noSub:true,subSpend:0,subBonus:undefined,subTarget:undefined,subMonths:undefined});
+  const saveSettings=()=>{onUpdate({...uc,nickname:nick,openedDate,benefitUsage:bu});onClose();};
 
   const TABS=[
     {id:"overview",label:"Overview"},
@@ -1658,6 +1737,39 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
               </div>}
             </div>
             )}
+            <div style={{background:C.s2,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:velocity.length?10:0}}>
+                <span style={{fontSize:13,color:C.text2,fontWeight:500}}>Application Status</span>
+                <span style={{fontSize:11.5,color:uc.openedDate?C.text3:C.gold}}>
+                  {uc.openedDate
+                    ?new Date(uc.openedDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
+                    :"Set date in Settings"}
+                </span>
+              </div>
+              {velocity.map((rule,i)=>{
+                const col=rule.status==="exceeded"?C.red:rule.status==="warning"?C.gold:C.green;
+                return(
+                  <div key={rule.label} style={{
+                    display:"flex",justifyContent:"space-between",alignItems:"center",
+                    paddingTop:8,marginTop:i===0?0:8,
+                    borderTop:i===0?`1px solid ${C.border}`:"none"}}>
+                    <div>
+                      <div style={{fontSize:12.5,fontWeight:600,color:col}}>{rule.label}</div>
+                      <div style={{fontSize:10.5,color:C.text3,marginTop:1}}>{rule.note}</div>
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
+                      <div style={{fontSize:16,fontWeight:700,color:col}}>{rule.count}<span style={{fontSize:11,color:C.text3}}>/{rule.limit}</span></div>
+                      <div style={{fontSize:10.5,color:col}}>
+                        {rule.status==="exceeded"?"⛔ Over limit":rule.status==="warning"?"⚠ Near limit":"✓ OK"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {velocity.length===0&&(
+                <div style={{fontSize:12,color:C.text3}}>No velocity rules tracked for {card.issuer}</div>
+              )}
+            </div>
             <div style={{fontSize:10.5,color:C.text3,fontWeight:600,letterSpacing:0.9,textTransform:"uppercase",marginBottom:-4}}>Earn Rates</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(118px,1fr))",gap:8}}>
               {Object.entries(CATS).map(([cat,meta])=>{
@@ -1716,7 +1828,9 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                   )}
                   {hasValue&&p!=="annual"&&(
                     <div style={{fontSize:10.5,color:C.text3,marginTop:4}}>
-                      ${b.value}/{p==="monthly"?"mo":p==="quarterly"?"qtr":"half-yr"} · tap periods to mark used
+                      ${b.value}/{p==="monthly"?"mo":p==="quarterly"?"qtr":"half-yr"}
+                      {b.decemberBonus?` · $${b.value+b.decemberBonus} in December`:""}
+                      {" · tap periods to mark used"}
                     </div>
                   )}
                 </div>
@@ -1733,8 +1847,41 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
         )}
 
         {tab==="sub"&&!sub&&(
-          <div style={{textAlign:"center",padding:"32px 0",color:C.text3,fontSize:13}}>
-            No sign-up bonus tracked for this card.
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {!addingNewSub?(
+              <div style={{textAlign:"center",padding:"32px 0",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+                <div style={{color:C.text3,fontSize:13}}>No sign-up bonus tracked for this card.</div>
+                <Btn gold onClick={()=>setAddingNewSub(true)}>+ Add Sign-Up Bonus</Btn>
+              </div>
+            ):(
+              <div style={{background:C.s2,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}>
+                <div style={{fontSize:10.5,color:C.text3,marginBottom:12,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                  Add Sign-Up Bonus
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                  <div>
+                    <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Bonus ({card.rewardType==="cashback"?"$":"pts"})</div>
+                    <Input value={subBonusVal} onChange={e=>setSubBonusVal(e.target.value)} type="number" placeholder={String(card.sub?.bonus||0)}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Spend ($)</div>
+                    <Input value={subTargetVal} onChange={e=>setSubTargetVal(e.target.value)} type="number" placeholder={String(card.sub?.spend||0)}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Months</div>
+                    <Input value={subMonthsVal} onChange={e=>setSubMonthsVal(e.target.value)} type="number" placeholder={String(card.sub?.months||3)}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <Btn gold onClick={saveNewSub} full>Save Sign-Up Bonus</Btn>
+                  <button onClick={()=>setAddingNewSub(false)} style={{
+                    background:"transparent",border:`1px solid ${C.border2}`,borderRadius:9,
+                    padding:"8px 14px",fontSize:12,color:C.text2,cursor:"pointer",flexShrink:0}}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {tab==="sub"&&sub&&(
@@ -1801,6 +1948,14 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                 </>
               )}
             </div>
+            <button onClick={removeSub} style={{
+              background:"transparent",border:`1px solid ${"#ef4444"}44`,borderRadius:10,
+              padding:"9px 14px",fontSize:12,color:"#ef4444",cursor:"pointer",fontWeight:600,
+              transition:"background 0.15s"}}
+              onMouseOver={e=>e.currentTarget.style.background="#ef444411"}
+              onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+              Remove Sign-Up Bonus
+            </button>
           </div>
         )}
 
@@ -1811,6 +1966,15 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal}) {
                 Card Nickname
               </div>
               <Input value={nick} onChange={e=>setNick(e.target.value)} placeholder="e.g. Business Platinum"/>
+            </div>
+            <div>
+              <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                Date Opened
+              </div>
+              <Input type="date" value={openedDate} onChange={e=>setOpenedDate(e.target.value)}/>
+              <div style={{fontSize:11,color:C.text3,marginTop:5}}>
+                Used to track application velocity rules and SUB expiration dates.
+              </div>
             </div>
             {isWaived&&(
               <div style={{background:`${C.green}0C`,border:`1px solid ${C.green}30`,borderRadius:12,
@@ -1845,6 +2009,7 @@ function AddCard({onClose,userCards,onAdd}) {
   const [q,setQ]=useState("");
   const [sel,setSel]=useState(null);
   const [nick,setNick]=useState("");
+  const [openedDate,setOpenedDate]=useState(new Date().toISOString().slice(0,10));
   const [noSub,setNoSub]=useState(false);
   const [subSpend,setSubSpend]=useState("0");
   const [subBonus,setSubBonus]=useState("");
@@ -1871,9 +2036,8 @@ function AddCard({onClose,userCards,onAdd}) {
       if(noSub){
         onAdd({
           instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
-          noSub:true,subSpend:0,
+          openedDate,noSub:true,subSpend:0,
           benefitUsage:{},mlaWaiver:false,
-          addedDate:new Date().toISOString().slice(0,10)
         });
       } else {
         const bonus=Number(subBonus)||sel.sub.bonus;
@@ -1882,10 +2046,9 @@ function AddCard({onClose,userCards,onAdd}) {
         const hasCustom=bonus!==sel.sub.bonus||target!==sel.sub.spend||months!==sel.sub.months;
         onAdd({
           instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
-          subSpend:Number(subSpend)||0,
+          openedDate,subSpend:Number(subSpend)||0,
           ...(hasCustom?{subBonus:bonus,subTarget:target,subMonths:months}:{}),
           benefitUsage:{},mlaWaiver:false,
-          addedDate:new Date().toISOString().slice(0,10)
         });
       }
     }catch(e){console.error("AddCard error:",e);}
@@ -1935,6 +2098,10 @@ function AddCard({onClose,userCards,onAdd}) {
             <div>
               <FLabel>Nickname (optional)</FLabel>
               <Input value={nick} onChange={e=>setNick(e.target.value)} placeholder="e.g. Work Card"/>
+            </div>
+            <div>
+              <FLabel>Date Opened</FLabel>
+              <Input type="date" value={openedDate} onChange={e=>setOpenedDate(e.target.value)}/>
             </div>
             <div style={{background:C.s2,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:noSub?0:12}}>
@@ -2018,11 +2185,15 @@ function PooledBenefits({cards,onUpdateCard}) {
         Benefits with the same name are pooled across cards. Tap to expand and mark per-card usage.
       </div>
       {groups.map(g=>{
-        const pcount=PCOUNT[g.period];
-        const totalAnnual=g.valuePerPeriod*pcount*g.instances.length;
+        const totalAnnual=g.instances.reduce((s,{b})=>s+bTotalValue(b),0);
         const totalUsed=g.instances.reduce((s,{uc,b})=>s+bUsedValue(b,uc.benefitUsage?.[b.id]),0);
         const pct=totalAnnual>0?(totalUsed/totalAnnual)*100:0;
         const isExp=expanded===g.key;
+        // Subtitle: show per-card rate only if all instances share the same period+value
+        const allSame=g.instances.every(({b})=>b.period===g.instances[0].b.period&&b.value===g.instances[0].b.value);
+        const subLabel=allSame
+          ?`$${g.instances[0].b.value}/${g.instances[0].b.period==="monthly"?"mo":g.instances[0].b.period==="quarterly"?"qtr":g.instances[0].b.period==="semiannual"?"half-yr":"yr"}`
+          :`$${totalAnnual.toLocaleString()}/yr total`;
 
         return(
           <div key={g.key} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
@@ -2033,8 +2204,7 @@ function PooledBenefits({cards,onUpdateCard}) {
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{g.name}</div>
                 <div style={{fontSize:11,color:C.text3}}>
-                  {g.instances.length} card{g.instances.length!==1?"s":""} ·{" "}
-                  ${g.valuePerPeriod}/{g.period==="monthly"?"mo":g.period==="quarterly"?"qtr":g.period==="semiannual"?"half-yr":"yr"}
+                  {g.instances.length} card{g.instances.length!==1?"s":""} · {subLabel}
                 </div>
                 <div style={{marginTop:6}}><Bar pct={pct} h={4}/></div>
               </div>
@@ -2087,6 +2257,7 @@ export default function App() {
   const [tab,setTab]=useState("dashboard");
   const [benefitSubTab,setBenefitSubTab]=useState("bycard");
   const [subTrackTab,setSubTrackTab]=useState("ongoing");
+  const [cardSort,setCardSort]=useState("fee");
   const [selId,setSelId]=useState(null);
   const [showAdd,setShowAdd]=useState(false);
   const [bestCat,setBestCat]=useState("dining");
@@ -2131,6 +2302,49 @@ export default function App() {
     });
     return{ongoing,completed,nosub};
   },[cards]);
+
+  const spendPlan=useMemo(()=>{
+    const today=Date.now();
+    return subGroups.ongoing.map(({uc,card,sub})=>{
+      const od=uc.openedDate||uc.addedDate;
+      const opened=od?new Date(od).getTime():today;
+      const months=uc.subMonths!=null?uc.subMonths:(card.sub.months||3);
+      const expiry=new Date(opened);
+      expiry.setMonth(expiry.getMonth()+months);
+      const msLeft=Math.max(0,expiry.getTime()-today);
+      const daysLeft=Math.ceil(msLeft/86400000);
+      const monthsLeft=Math.max(0.1,msLeft/(30.44*86400000));
+      const remaining=sub.remaining;
+      const monthlyNeeded=remaining>0?remaining/monthsLeft:0;
+      return{uc,card,sub,expiry,daysLeft,monthsLeft,remaining,monthlyNeeded,hasDate:!!od};
+    }).sort((a,b)=>b.monthlyNeeded-a.monthlyNeeded);
+  },[subGroups.ongoing]);
+
+  const totalPlanRemaining=useMemo(()=>spendPlan.reduce((s,p)=>s+p.remaining,0),[spendPlan]);
+  const totalMonthlyNeeded=useMemo(()=>spendPlan.reduce((s,p)=>s+p.monthlyNeeded,0),[spendPlan]);
+
+  const sortedCards=useMemo(()=>{
+    const byFee=(a,b)=>(DB[b.cardId]?.annualFee||0)-(DB[a.cardId]?.annualFee||0);
+    if(cardSort==="fee") return [...cards].sort(byFee);
+    if(cardSort==="name") return [...cards].sort((a,b)=>{
+      const na=(a.nickname||DB[a.cardId]?.short||"").toLowerCase();
+      const nb=(b.nickname||DB[b.cardId]?.short||"").toLowerCase();
+      return na<nb?-1:na>nb?1:0;
+    });
+    if(cardSort==="issuer") return [...cards].sort((a,b)=>{
+      const ia=(DB[a.cardId]?.issuer||"").toLowerCase();
+      const ib=(DB[b.cardId]?.issuer||"").toLowerCase();
+      if(ia!==ib) return ia<ib?-1:1;
+      return byFee(a,b);
+    });
+    if(cardSort==="date") return [...cards].sort((a,b)=>{
+      const da=a.openedDate||a.addedDate||"";
+      const db=b.openedDate||b.addedDate||"";
+      if(da!==db) return da<db?-1:da>db?1:0;
+      return byFee(a,b);
+    });
+    return cards;
+  },[cards,cardSort]);
 
   const hasCards=cards.length>0;
   const NAV=[["dashboard","Overview"],["cards","My Cards"],["benefits","Benefits"],["subs","Sign-Up Bonuses"],["settings","Settings"]];
@@ -2298,12 +2512,27 @@ export default function App() {
           {/* ── MY CARDS ── */}
           {tab==="cards"&&(
             <div className="fu" style={{display:"flex",flexDirection:"column",gap:12}}>
+              {hasCards&&(
+                <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{fontSize:11,color:C.text3,marginRight:2}}>Sort:</span>
+                  {[["fee","Annual Fee"],["name","Name"],["issuer","Issuer"],["date","Date Acquired"]].map(([id,lbl])=>(
+                    <button key={id} onClick={()=>setCardSort(id)} style={{
+                      background:cardSort===id?`${C.blue}18`:"transparent",
+                      border:`1px solid ${cardSort===id?C.blue+"50":C.border2}`,
+                      color:cardSort===id?C.blue:C.text2,
+                      borderRadius:20,padding:"4px 11px",fontSize:11.5,
+                      fontWeight:cardSort===id?600:400,cursor:"pointer",transition:"all 0.15s"}}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              )}
               {!hasCards?(
                 <div style={{textAlign:"center",padding:"60px 0"}}>
                   <div style={{color:C.text3,marginBottom:16}}>No cards in your wallet yet</div>
                   <Btn gold onClick={()=>setShowAdd(true)}>Add a Card</Btn>
                 </div>
-              ):cards.map((uc,i)=>{
+              ):sortedCards.map((uc,i)=>{
                 const card=DB[uc.cardId]; if(!card) return null;
                 const off=calcOffset(uc,mlaGlobal),sub=subInfo(uc);
                 const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
@@ -2431,18 +2660,19 @@ export default function App() {
                 <div style={{textAlign:"center",padding:"60px 0",color:C.text3}}>Add cards to track sign-up bonuses</div>
               ):(
                 <>
-                  <div style={{display:"flex",gap:2,borderBottom:`1px solid ${C.border}`,marginBottom:4}}>
-                    {[["ongoing","Ongoing"],["completed","Completed"],["nosub","No SUB"]].map(([id,lbl])=>{
-                      const count=subGroups[id]?.length||0;
+                  <div style={{display:"flex",gap:2,borderBottom:`1px solid ${C.border}`,marginBottom:4,overflowX:"auto"}}>
+                    {[["ongoing","Ongoing"],["completed","Completed"],["nosub","No SUB"],["plan","Spend Plan"]].map(([id,lbl])=>{
+                      const count=id==="plan"?null:subGroups[id]?.length||0;
+                      const active=subTrackTab===id;
                       return(
                         <button key={id} onClick={()=>setSubTrackTab(id)} style={{
-                          background:subTrackTab===id?`${C.purple}15`:"transparent",
-                          border:subTrackTab===id?`1px solid ${C.purple}30`:"1px solid transparent",
-                          color:subTrackTab===id?C.purple:C.text2,
+                          background:active?`${C.purple}15`:"transparent",
+                          border:active?`1px solid ${C.purple}30`:"1px solid transparent",
+                          color:active?C.purple:C.text2,
                           borderRadius:"8px 8px 0 0",padding:"7px 14px",
-                          fontSize:12.5,fontWeight:subTrackTab===id?600:400,
+                          fontSize:12.5,fontWeight:active?600:400,
                           cursor:"pointer",marginBottom:-1,transition:"all 0.15s",whiteSpace:"nowrap"}}>
-                          {lbl}{count>0&&<span style={{marginLeft:5,fontSize:10,opacity:0.7}}>({count})</span>}
+                          {lbl}{count!=null&&count>0&&<span style={{marginLeft:5,fontSize:10,opacity:0.7}}>({count})</span>}
                         </button>
                       );
                     })}
@@ -2535,6 +2765,98 @@ export default function App() {
                       ))}
                     </div>
                   )}
+
+                  {subTrackTab==="plan"&&(
+                    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                      {spendPlan.length===0?(
+                        <div style={{textAlign:"center",padding:"40px 0",color:C.text3,fontSize:13}}>
+                          No ongoing sign-up bonuses to plan
+                        </div>
+                      ):(
+                        <>
+                          {/* Summary header */}
+                          <div style={{background:`${C.purple}10`,border:`1px solid ${C.purple}30`,borderRadius:14,padding:"16px 18px"}}>
+                            <div style={{fontSize:11,color:C.text3,marginBottom:4,textTransform:"uppercase",letterSpacing:0.8,fontWeight:600}}>Total Remaining Spend</div>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:600,color:C.purple,marginBottom:2}}>
+                              ${totalPlanRemaining.toLocaleString()}
+                            </div>
+                            <div style={{fontSize:12,color:C.text3,marginBottom:12}}>
+                              across {spendPlan.filter(p=>p.remaining>0).length} active SUB{spendPlan.filter(p=>p.remaining>0).length!==1?"s":""}
+                            </div>
+                            <div style={{borderTop:`1px solid ${C.purple}25`,paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                              <div>
+                                <div style={{fontSize:10.5,color:C.text3,marginBottom:2}}>Combined Monthly Target</div>
+                                <div style={{fontSize:18,fontWeight:700,color:C.purple}}>${Math.ceil(totalMonthlyNeeded).toLocaleString()}<span style={{fontSize:12,fontWeight:400,color:C.text3}}>/mo</span></div>
+                              </div>
+                              <div style={{textAlign:"right"}}>
+                                <div style={{fontSize:10.5,color:C.text3,marginBottom:2}}>Cards tracked</div>
+                                <div style={{fontSize:18,fontWeight:700,color:C.text}}>{spendPlan.length}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Per-card rows, sorted most urgent first */}
+                          {spendPlan.map(({uc,card,sub,expiry,daysLeft,monthsLeft,remaining,monthlyNeeded,hasDate})=>{
+                            const urgencyCol=remaining===0?C.green:daysLeft<30?C.red:daysLeft<60?C.gold:C.green;
+                            const urgencyLabel=remaining===0?"✓ Met":daysLeft<30?"🔴 Urgent":daysLeft<60?"🟡 Soon":"🟢 On Track";
+                            return(
+                              <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
+                                background:C.surface,
+                                border:`1px solid ${remaining===0?C.green+"40":urgencyCol+"35"}`,
+                                borderRadius:14,padding:"13px 15px"}}>
+                                <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:remaining>0?10:0}}>
+                                  <CardArt card={card} sm nickname={uc.nickname}/>
+                                  <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{uc.nickname||card.short}</div>
+                                    <div style={{fontSize:10.5,color:C.text3}}>
+                                      {hasDate
+                                        ?`Expires ${expiry.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})} · ${daysLeft}d left`
+                                        :"Set opened date to see expiry"}
+                                    </div>
+                                  </div>
+                                  <div style={{textAlign:"right",flexShrink:0}}>
+                                    <div style={{fontSize:11.5,fontWeight:700,color:urgencyCol}}>{urgencyLabel}</div>
+                                    <Pill color={C.purple} style={{marginTop:4}}>
+                                      {card.rewardType==="cashback"?`$${sub.bonus.toLocaleString()}`:`${sub.bonus.toLocaleString()} ${sub.currency}`}
+                                    </Pill>
+                                  </div>
+                                </div>
+                                {remaining>0&&(
+                                  <>
+                                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+                                      <div style={{background:C.s2,borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${C.border}`}}>
+                                        <div style={{fontSize:10,color:C.text3,marginBottom:2}}>Still Need</div>
+                                        <div style={{fontSize:13,fontWeight:700,color:C.text}}>${remaining.toLocaleString()}</div>
+                                      </div>
+                                      <div style={{background:C.s2,borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${C.border}`}}>
+                                        <div style={{fontSize:10,color:C.text3,marginBottom:2}}>Months Left</div>
+                                        <div style={{fontSize:13,fontWeight:700,color:C.text}}>{hasDate?monthsLeft.toFixed(1):"—"}</div>
+                                      </div>
+                                      <div style={{background:`${urgencyCol}12`,borderRadius:8,padding:"7px 8px",textAlign:"center",border:`1px solid ${urgencyCol}35`}}>
+                                        <div style={{fontSize:10,color:C.text3,marginBottom:2}}>Need / Mo</div>
+                                        <div style={{fontSize:13,fontWeight:700,color:urgencyCol}}>{hasDate?`$${Math.ceil(monthlyNeeded).toLocaleString()}`:"—"}</div>
+                                      </div>
+                                    </div>
+                                    <Bar pct={sub.pct} color={urgencyCol}/>
+                                    <div style={{display:"flex",justifyContent:"space-between",marginTop:5,fontSize:11,color:C.text3}}>
+                                      <span>${sub.spend.toLocaleString()} spent</span>
+                                      <span>${sub.target.toLocaleString()} goal</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          {!spendPlan.some(p=>p.hasDate)&&(
+                            <div style={{background:`${C.gold}0C`,border:`1px solid ${C.gold}25`,borderRadius:12,padding:"11px 14px",fontSize:12,color:C.text2}}>
+                              💡 Set the opened date for each card (in its Settings tab) to see accurate expiration dates and monthly targets.
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -2601,7 +2923,7 @@ export default function App() {
         </div>
       </div>
 
-      {sel&&<CardDetail uc={sel} onClose={()=>setSelId(null)} onUpdate={updateCard} onDelete={deleteCard} mlaGlobal={mlaGlobal}/>}
+      {sel&&<CardDetail uc={sel} onClose={()=>setSelId(null)} onUpdate={updateCard} onDelete={deleteCard} mlaGlobal={mlaGlobal} allCards={cards}/>}
       {showAdd&&<AddCard onClose={()=>{setShowAdd(false);setTab("dashboard");}} userCards={cards} onAdd={addCard}/>}
     </>
   );
