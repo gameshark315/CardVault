@@ -28,6 +28,14 @@ const C = {
   text:"#E8EAF0",text2:"#8892A8",text3:"#4E5672",
 };
 
+// ── CUSTOM CARD REGISTRY (populated from localStorage at startup) ──
+let _extraDB = {};
+try {
+  const _s=localStorage.getItem("cardvault_custom_v1");
+  if(_s) _extraDB=Object.fromEntries(JSON.parse(_s).map(c=>[c.id,c]));
+}catch(e){}
+const getCard=id=>DB[id]||_extraDB[id]||null;
+
 // ── CARD DATABASE ─────────────────────────────────────────────────
 const DB = {
 
@@ -105,6 +113,15 @@ const DB = {
       {id:"disney",  name:"Disney Bundle Credit",value:7, period:"monthly",group:"disney-bundle"},
       {id:"home",    name:"Home Chef Credit",    value:15,period:"monthly",group:"home-chef"},
     ],
+  },
+
+  "rakuten-amex": {
+    id:"rakuten-amex",name:"Rakuten Cash Back Visa® Credit Card",issuer:"American Express",short:"Rakuten Cash Back",
+    annualFee:0,g1:"#CC0000",g2:"#FF2020",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
+    mlaEligible:true,
+    rates:{flights:1,hotels:1,dining:3,groceries:3,gas:1,streaming:1,transit:1,other:3},
+    sub:{bonus:40,spend:500,months:3},
+    benefits:[],
   },
 
   // ═══════════ CHASE ═══════════
@@ -1446,7 +1463,7 @@ function getVelocity(issuer,allCards){
       const d=new Date(od).getTime();
       if(d<cutoff) return false;
       if(rule.scope==="all") return true;
-      return DB[uc.cardId]?.issuer===issuer;
+      return getCard(uc.cardId)?.issuer===issuer;
     }).length;
     const status=count>=rule.limit?"exceeded":count===rule.limit-1?"warning":"ok";
     return{...rule,count,status};
@@ -1454,7 +1471,7 @@ function getVelocity(issuer,allCards){
 }
 
 function effectiveRates(uc) {
-  const card=DB[uc.cardId]; if(!card) return {};
+  const card=getCard(uc.cardId); if(!card) return {};
   const base={...card.rates};
   if(card.rotating&&uc.rotatingCat&&card.rotating.cats.includes(uc.rotatingCat))
     base[uc.rotatingCat]=Math.max(base[uc.rotatingCat]||1,card.rotating.rate);
@@ -1466,7 +1483,7 @@ function effectiveRates(uc) {
 }
 
 function calcOffset(uc,mlaGlobal) {
-  const card=DB[uc.cardId]; if(!card) return{fee:0,saved:0,pct:0};
+  const card=getCard(uc.cardId); if(!card) return{fee:0,saved:0,pct:0};
   if(card.annualFee===0) return{fee:0,saved:0,pct:100,noFee:true};
   const waived=(mlaGlobal&&card.mlaEligible)||uc.mlaWaiver;
   if(waived) return{fee:0,saved:card.annualFee,pct:100,waived:true};
@@ -1476,7 +1493,7 @@ function calcOffset(uc,mlaGlobal) {
 }
 
 function subInfo(uc) {
-  const card=DB[uc.cardId]; if(!card) return null;
+  const card=getCard(uc.cardId); if(!card) return null;
   if(uc.noSub) return null;
   const spend=uc.subSpend||0;
   const target=uc.subTarget!=null?uc.subTarget:card.sub.spend;
@@ -1504,6 +1521,176 @@ function useStored(key,init) {
     });
   },[key]);
   return[val,set];
+}
+
+// ── CSV IMPORT UTILITIES ─────────────────────────────────────────
+
+const BENEFIT_KW = {
+  "uber-cash":    ["uber cash","uber eats credit"],
+  "uber-one":     ["uber one"],
+  "uber":         ["uber cash","uber credit"],
+  "saks":         ["saks fifth","saks credit"],
+  "airline":      ["airline fee credit","airline credit"],
+  "resy":         ["resy credit","resy dining"],
+  "digital":      ["digital entertainment","entertainment credit","peacock","hulu credit","espn"],
+  "lululemon":    ["lululemon credit"],
+  "oura":         ["oura ring","oura credit"],
+  "hotel":        ["hotel collection credit","fhr credit","fine hotels","hotel credit"],
+  "walmart":      ["walmart+ credit","walmart plus credit"],
+  "equinox":      ["equinox credit"],
+  "clear":        ["clear plus credit","clear credit"],
+  "ge":           ["global entry credit","tsa precheck","tsa pre-check"],
+  "dining":       ["dining credit","restaurant credit"],
+  "travel":       ["travel credit","annual travel credit"],
+  "edit":         ["the edit hotel","edit credit"],
+  "stubhub":      ["stubhub credit","viagogo credit"],
+  "lyft":         ["lyft credit","lyft in-app"],
+  "peloton":      ["peloton credit"],
+  "apple":        ["apple tv+ credit","apple music credit","apple services"],
+  "doordash":     ["doordash credit","door dash credit"],
+  "dashpass":     ["dashpass credit"],
+  "disney":       ["disney bundle credit","disney+ credit"],
+  "disney-bundle":["disney bundle credit"],
+  "home-chef":    ["home chef credit"],
+  "home":         ["home chef credit"],
+  "reward":       ["free night award","free night credit"],
+  "software":     ["software credit","software statement credit"],
+  "wifi":         ["wifi credit","inflight credit","wi-fi credit"],
+  "admirals":     ["admirals club credit"],
+  "lounge":       ["lounge credit","centurion lounge"],
+  "ppass":        ["priority pass credit"],
+  "credit":       ["statement credit"],
+  "disc":         ["discoverist credit"],
+  "equinox-plus": ["equinox+ credit","equinox plus credit"],
+};
+
+function parseCSVText(text) {
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  return lines.map(line=>{
+    const cells=[];let cell='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){if(inQ&&line[i+1]==='"'){cell+='"';i++;}else inQ=!inQ;}
+      else if(ch===','&&!inQ){cells.push(cell.trim());cell='';}
+      else cell+=ch;
+    }
+    cells.push(cell.trim());
+    return cells;
+  }).filter(r=>r.some(c=>c));
+}
+
+function detectCSVFormat(headers) {
+  const h=headers.map(x=>x.toLowerCase().replace(/[^a-z0-9 ]/g,'').trim());
+  if(h.some(x=>x.includes('extended details'))) return 'amex';
+  if(h.includes('transaction date')&&h.includes('post date')) return 'chase';
+  if(h.some(x=>x==='card no'||x==='card no ')) return 'capital-one';
+  if(h.includes('status')&&h.includes('debit')&&h.includes('credit')&&h.length<=6) return 'citi';
+  if(h.some(x=>x.includes('reference number'))&&h.some(x=>x.includes('payee'))) return 'boa';
+  if(h[0]==='date'&&h.length>=5) return 'wells-fargo';
+  // Simple 3-column format: Date, Description, Amount (common Amex simplified export)
+  if(h[0]==='date'&&h[1]==='description'&&h.some(x=>x==='amount')) return 'amex';
+  return null;
+}
+
+function parseDateLocal(s) {
+  const mdy=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(mdy) return new Date(+mdy[3]<100?2000+ +mdy[3]:+mdy[3],+mdy[1]-1,+mdy[2]);
+  const ymd=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(ymd) return new Date(+ymd[1],+ymd[2]-1,+ymd[3]);
+  return new Date(s);
+}
+
+function periodSlotIdx(dateStr,period) {
+  const d=parseDateLocal(dateStr); if(isNaN(d)) return 0;
+  const m=d.getMonth();
+  if(period==='monthly') return m;
+  if(period==='quarterly') return Math.floor(m/3);
+  if(period==='semiannual') return m<6?0:1;
+  return 0;
+}
+
+function extractCSVTransactions(rows,format) {
+  const data=rows.slice(1);
+  return data.flatMap(row=>{
+    try{
+      if(format==='amex'){
+        const amt=parseFloat(row[2])||0;
+        if(amt>=0) return [];
+        return [{date:row[0],description:row[1],amount:Math.abs(amt)}];
+      }
+      if(format==='chase'){
+        const amt=parseFloat(row[5])||0;
+        if(amt>=0) return [];
+        return [{date:row[0],description:row[2],amount:Math.abs(amt)}];
+      }
+      if(format==='capital-one'){
+        const amt=parseFloat(row[6])||0;
+        if(amt>=0) return [];
+        return [{date:row[0],description:row[4],amount:Math.abs(amt),cardLast4:(row[2]||'').slice(-4)}];
+      }
+      if(format==='citi'){
+        const credit=parseFloat(row[4])||0;
+        if(credit<=0) return [];
+        return [{date:row[1],description:row[2],amount:credit}];
+      }
+      if(format==='boa'){
+        const amt=parseFloat(row[4])||0;
+        if(amt<=0) return [];
+        return [{date:row[0],description:row[2],amount:amt}];
+      }
+      if(format==='wells-fargo'){
+        const amt=parseFloat(row[1])||0;
+        if(amt<=0) return [];
+        return [{date:row[0],description:row[4],amount:amt}];
+      }
+    }catch(e){}
+    return [];
+  });
+}
+
+const SPEND_EXCLUDE_KW=['payment','thank you','autopay','auto pay','wire transfer','balance transfer','cash advance','annual fee'];
+function extractSpendTransactions(rows,format) {
+  const data=rows.slice(1);
+  return data.flatMap(row=>{
+    try{
+      let date,description,amount;
+      if(format==='amex'){
+        amount=parseFloat(row[2])||0; date=row[0]; description=row[1];
+        if(amount<=0) return []; // negative = credit/payment, not spend
+      } else if(format==='chase'){
+        amount=parseFloat(row[5])||0; date=row[0]; description=row[2];
+        if(amount<=0) return [];
+      } else if(format==='capital-one'){
+        amount=parseFloat(row[6])||0; date=row[0]; description=row[4];
+        if(amount<=0) return [];
+      } else if(format==='citi'){
+        amount=parseFloat(row[3])||0; date=row[1]; description=row[2]; // debit column
+        if(amount<=0) return [];
+      } else if(format==='boa'){
+        amount=parseFloat(row[4])||0; date=row[0]; description=row[2];
+        if(amount>=0) return []; amount=Math.abs(amount); // BofA: negative = charge
+      } else if(format==='wells-fargo'){
+        amount=parseFloat(row[1])||0; date=row[0]; description=row[4];
+        if(amount>=0) return []; amount=Math.abs(amount); // WF: negative = charge
+      } else return [];
+      const d=description.toLowerCase();
+      if(SPEND_EXCLUDE_KW.some(kw=>d.includes(kw))) return [];
+      return [{date,description,amount}];
+    }catch(e){}
+    return [];
+  });
+}
+
+function matchTxToBenefit(desc,card) {
+  const d=desc.toLowerCase();
+  for(const b of card.benefits){
+    if(bTotalValue(b)===0) continue;
+    const kws=BENEFIT_KW[b.id];
+    if(kws&&kws.some(kw=>d.includes(kw))) return b.id;
+    const words=b.name.toLowerCase().split(/\s+/).filter(w=>w.length>3&&!['credit','annual','monthly','quarterly','membership','access','protection'].includes(w));
+    if(words.some(w=>d.includes(w))) return b.id;
+  }
+  return null;
 }
 
 // ── UI PRIMITIVES ────────────────────────────────────────────────
@@ -1587,7 +1774,7 @@ function Toggle({on,onToggle}) {
   );
 }
 
-function Overlay({onClose,children,title,wide}) {
+function Overlay({onClose,children,title,wide,action}) {
   return(
     <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{
       position:"fixed",inset:0,background:"rgba(0,0,0,0.78)",backdropFilter:"blur(7px)",
@@ -1597,7 +1784,10 @@ function Overlay({onClose,children,title,wide}) {
         display:"flex",flexDirection:"column",overflow:"hidden",animation:"popIn 0.18s ease"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
           padding:"18px 22px 14px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600}}>{title}</div>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:600}}>{title}</div>
+            {action}
+          </div>
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.06)",border:"none",
             color:C.text2,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,
             display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
@@ -1673,7 +1863,7 @@ function PeriodChips({benefit,usage,onSetAmount}) {
 
 // ── CARD DETAIL ───────────────────────────────────────────────────
 function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
-  const card=DB[uc.cardId];
+  const card=getCard(uc.cardId);
   const [tab,setTab]=useState("overview");
   const [spendVal,setSpendVal]=useState(String(uc.subSpend||0));
   const [subBonusVal,setSubBonusVal]=useState(String(uc.subBonus!=null?uc.subBonus:card?.sub.bonus||0));
@@ -1686,6 +1876,8 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
   const [bu,setBu]=useState(uc.benefitUsage||{});
   const [rotatingCat,setRotatingCat]=useState(uc.rotatingCat||"");
   const [chosenCats,setChosenCats]=useState(uc.chosenCats||{});
+  const [last4,setLast4]=useState(uc.cardLast4||"");
+  const [showImport,setShowImport]=useState(false);
   if(!card) return null;
 
   const isWaived=card.annualFee>0&&mlaGlobal&&card.mlaEligible;
@@ -1721,8 +1913,18 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
     onUpdate({...uc,nickname:nick,openedDate,benefitUsage:bu,
       ...(card.rotating?{rotatingCat}:{}),
       ...(card.choosable?{chosenCats}:{}),
+      ...(last4?{cardLast4:last4}:{cardLast4:undefined}),
     });
     onClose();
+  };
+  const applyImport=(newUsage,addedSpend=0)=>{
+    setBu(newUsage);
+    const newSpend=Math.round(((Number(uc.subSpend)||0)+(addedSpend||0))*100)/100;
+    if(addedSpend>0) setSpendVal(String(newSpend));
+    onUpdate({...uc,benefitUsage:newUsage,nickname:nick,
+      ...(addedSpend>0?{subSpend:newSpend}:{}),
+      ...(last4?{cardLast4:last4}:{}),
+    });
   };
 
   const TABS=[
@@ -2036,6 +2238,14 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
                 Used to track application velocity rules and SUB expiration dates.
               </div>
             </div>
+            <div>
+              <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                Last 4–5 Digits
+              </div>
+              <Input value={last4} onChange={e=>setLast4(e.target.value.replace(/\D/g,'').slice(0,5))}
+                placeholder="e.g. 1004" style={{fontFamily:'monospace',letterSpacing:2}}/>
+              <div style={{fontSize:11,color:C.text3,marginTop:5}}>Helps auto-identify this card in CSV statement imports.</div>
+            </div>
             {isWaived&&(
               <div style={{background:`${C.green}0C`,border:`1px solid ${C.green}30`,borderRadius:12,
                 padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
@@ -2117,6 +2327,15 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
                 </div>
               );
             })}
+            <div style={{background:C.s2,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
+              <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                Statement Import
+              </div>
+              <div style={{fontSize:11.5,color:C.text3,marginBottom:10}}>
+                Upload a CSV statement to automatically mark benefit credits as used.
+              </div>
+              <Btn onClick={()=>setShowImport(true)} full>📄 Import CSV Statement</Btn>
+            </div>
             <Btn gold onClick={saveSettings} full>Save Changes</Btn>
             <Btn danger onClick={()=>{
               if(window.confirm(`Remove ${card.short} from your wallet?`)){onDelete(uc.instanceId);onClose();}
@@ -2124,6 +2343,7 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
           </div>
         )}
       </div>
+      {showImport&&<ImportStatementModal card={card} uc={uc} onApply={applyImport} onClose={()=>setShowImport(false)}/>}
     </Overlay>
   );
 }
@@ -2264,8 +2484,444 @@ function CatalogueCard({card,expanded,onToggle,onAdd,walletCount}) {
   );
 }
 
+// ── MANUAL ADD CARD MODAL ────────────────────────────────────────
+const CARD_COLOR_PRESETS=[
+  ['#787878','#C8C8C8'],['#A07820','#D4A830'],['#1A1A3C','#383890'],
+  ['#003580','#0055C8'],['#1A4A2A','#2E7A42'],['#700000','#B00808'],
+  ['#2D1B6E','#5B35CF'],['#000000','#2A2A2A'],['#990000','#BB0F0F'],
+  ['#CC5500','#FF7700'],['#0A3A5A','#1A6A9A'],['#1A3060','#3060B0'],
+];
+
+function ManualAddCardModal({onClose,onSave}) {
+  const [name,setName]=useState('');
+  const [short,setShort]=useState('');
+  const [issuer,setIssuer]=useState('');
+  const [annualFee,setAnnualFee]=useState('0');
+  const [mlaEligible,setMlaEligible]=useState(false);
+  const [rewardType,setRewardType]=useState('cashback');
+  const [currency,setCurrency]=useState('Cash Back');
+  const [colorIdx,setColorIdx]=useState(2);
+  const [rates,setRates]=useState({dining:1,groceries:1,gas:1,flights:1,hotels:1,streaming:1,transit:1,other:1});
+  const [subBonus,setSubBonus]=useState('0');
+  const [subSpend,setSubSpend]=useState('0');
+  const [subMonths,setSubMonths]=useState('3');
+  const [benefits,setBenefits]=useState([]);
+
+  const addBenefit=()=>setBenefits(b=>[...b,{name:'',value:'',period:'annual'}]);
+  const updBenefit=(i,k,v)=>setBenefits(b=>b.map((x,j)=>j===i?{...x,[k]:v}:x));
+  const remBenefit=i=>setBenefits(b=>b.filter((_,j)=>j!==i));
+
+  const setRate=(cat,v)=>setRates(r=>({...r,[cat]:Number(v)||1}));
+
+  const handleRewardType=v=>{
+    setRewardType(v);
+    if(v==='cashback') setCurrency('Cash Back');
+    else if(v==='points') setCurrency('Points');
+    else if(v==='miles') setCurrency('Miles');
+  };
+
+  const save=()=>{
+    const id='custom-'+uid();
+    const [g1,g2]=CARD_COLOR_PRESETS[colorIdx];
+    onSave({
+      id,
+      name:name.trim()||short.trim()||'Custom Card',
+      short:short.trim()||name.trim()||'Custom Card',
+      issuer:issuer.trim()||'Other',
+      annualFee:Number(annualFee)||0,
+      g1,g2,
+      rewardType,
+      currency:currency.trim()||'Cash Back',
+      cpp:rewardType==='cashback'?0.01:0.02,
+      mlaEligible,
+      rates,
+      sub:{bonus:Number(subBonus)||0,spend:Number(subSpend)||0,months:Number(subMonths)||3},
+      benefits:benefits.filter(b=>b.name.trim()).map(b=>({
+        id:b.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
+        name:b.name.trim(),
+        value:Number(b.value)||0,
+        period:b.period||'annual',
+        group:'custom-'+uid(),
+      })),
+    });
+    onClose();
+  };
+
+  const FLabel=({children})=>(
+    <div style={{fontSize:10.5,color:C.text3,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:0.9}}>{children}</div>
+  );
+  const [g1p,g2p]=CARD_COLOR_PRESETS[colorIdx];
+
+  return(
+    <Overlay title="Add Card Manually" onClose={onClose} wide>
+      <div style={{padding:'14px 22px',display:'flex',flexDirection:'column',gap:16}}>
+
+        {/* Preview */}
+        <div style={{display:'flex',justifyContent:'center'}}>
+          <CardArt card={{name:name||'Card Name',short:short||name||'Card Name',issuer:issuer||'Issuer',g1:g1p,g2:g2p}} nickname={short||name}/>
+        </div>
+
+        {/* Basic info */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div>
+            <FLabel>Full Card Name</FLabel>
+            <Input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Chase Sapphire Reserve®"/>
+          </div>
+          <div>
+            <FLabel>Short / Display Name</FLabel>
+            <Input value={short} onChange={e=>setShort(e.target.value)} placeholder="e.g. Sapphire Reserve"/>
+          </div>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          <div>
+            <FLabel>Issuer</FLabel>
+            <Input value={issuer} onChange={e=>setIssuer(e.target.value)} placeholder="e.g. Chase"/>
+          </div>
+          <div>
+            <FLabel>Annual Fee ($)</FLabel>
+            <Input value={annualFee} onChange={e=>setAnnualFee(e.target.value)} type="number" placeholder="0"/>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <Toggle on={mlaEligible} onToggle={()=>setMlaEligible(!mlaEligible)}/>
+          <span style={{fontSize:13,color:C.text}}>MLA annual fee waiver eligible</span>
+        </div>
+
+        {/* Reward type */}
+        <div>
+          <FLabel>Reward Type</FLabel>
+          <div style={{display:'flex',gap:6}}>
+            {['cashback','points','miles'].map(t=>(
+              <button key={t} onClick={()=>handleRewardType(t)} style={{
+                background:rewardType===t?`${C.gold}20`:'transparent',
+                border:`1px solid ${rewardType===t?C.gold+'60':C.border2}`,
+                color:rewardType===t?C.gold:C.text2,
+                borderRadius:20,padding:'5px 14px',fontSize:12,fontWeight:rewardType===t?600:400,cursor:'pointer'}}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <div style={{marginTop:8}}>
+            <FLabel>Currency Name</FLabel>
+            <Input value={currency} onChange={e=>setCurrency(e.target.value)} placeholder="e.g. UR Points, Cash Back, Miles"/>
+          </div>
+        </div>
+
+        {/* Color */}
+        <div>
+          <FLabel>Card Color</FLabel>
+          <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+            {CARD_COLOR_PRESETS.map(([c1,c2],i)=>(
+              <div key={i} onClick={()=>setColorIdx(i)} style={{
+                width:36,height:24,borderRadius:5,cursor:'pointer',
+                background:`linear-gradient(135deg,${c1},${c2})`,
+                border:`2px solid ${colorIdx===i?C.gold:'transparent'}`,
+                boxShadow:colorIdx===i?`0 0 0 1px ${C.gold}`:'none',
+                transition:'all 0.15s'}}/>
+            ))}
+          </div>
+        </div>
+
+        {/* Earn rates */}
+        <div>
+          <FLabel>Earn Rates (multiplier per category)</FLabel>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            {Object.entries(CATS).map(([cat,{label,icon}])=>(
+              <div key={cat} style={{display:'flex',alignItems:'center',gap:8,background:C.s2,borderRadius:9,padding:'7px 10px'}}>
+                <span style={{fontSize:13}}>{icon}</span>
+                <span style={{flex:1,fontSize:12,color:C.text2}}>{label}</span>
+                <input type="number" min="1" step="0.5" value={rates[cat]||1}
+                  onChange={e=>setRate(cat,e.target.value)}
+                  style={{width:50,background:C.s3,border:`1px solid ${C.border2}`,borderRadius:7,
+                    padding:'4px 6px',color:C.text,fontSize:12,outline:'none',textAlign:'center'}}/>
+                <span style={{fontSize:11,color:C.text3}}>x</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* SUB */}
+        <div style={{background:C.s2,borderRadius:12,padding:'12px 14px',border:`1px solid ${C.border}`}}>
+          <FLabel>Sign-Up Bonus</FLabel>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+            <div>
+              <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Bonus ({rewardType==='cashback'?'$':'pts'})</div>
+              <Input value={subBonus} onChange={e=>setSubBonus(e.target.value)} type="number"/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Spend ($)</div>
+              <Input value={subSpend} onChange={e=>setSubSpend(e.target.value)} type="number"/>
+            </div>
+            <div>
+              <div style={{fontSize:11,color:C.text3,marginBottom:5}}>Months</div>
+              <Input value={subMonths} onChange={e=>setSubMonths(e.target.value)} type="number"/>
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits */}
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <FLabel>Annual Credits & Benefits</FLabel>
+            <button onClick={addBenefit} style={{
+              background:`${C.gold}15`,border:`1px solid ${C.gold}40`,
+              color:C.gold,borderRadius:8,padding:'3px 10px',fontSize:11.5,
+              fontWeight:600,cursor:'pointer'}}>+ Add Benefit</button>
+          </div>
+          {benefits.length===0&&(
+            <div style={{fontSize:12,color:C.text3,textAlign:'center',padding:'12px 0'}}>No benefits added yet</div>
+          )}
+          {benefits.map((b,i)=>(
+            <div key={i} style={{display:'flex',gap:7,marginBottom:7,alignItems:'flex-start'}}>
+              <div style={{flex:2}}>
+                {i===0&&<div style={{fontSize:10,color:C.text3,marginBottom:4}}>Benefit name</div>}
+                <Input value={b.name} onChange={e=>updBenefit(i,'name',e.target.value)} placeholder="e.g. Travel Credit"/>
+              </div>
+              <div style={{flex:1}}>
+                {i===0&&<div style={{fontSize:10,color:C.text3,marginBottom:4}}>$ value</div>}
+                <Input value={b.value} onChange={e=>updBenefit(i,'value',e.target.value)} type="number" placeholder="0"/>
+              </div>
+              <div style={{flex:1}}>
+                {i===0&&<div style={{fontSize:10,color:C.text3,marginBottom:4}}>Period</div>}
+                <select value={b.period} onChange={e=>updBenefit(i,'period',e.target.value)} style={{
+                  background:C.s2,border:`1px solid ${C.border2}`,borderRadius:10,
+                  padding:'9px 8px',color:C.text,fontSize:13,outline:'none',width:'100%'}}>
+                  <option value="annual">Annual</option>
+                  <option value="semiannual">Semi-annual</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <button onClick={()=>remBenefit(i)} style={{
+                background:'transparent',border:`1px solid ${C.border2}`,borderRadius:8,
+                padding:'8px 10px',color:C.red,cursor:'pointer',fontSize:13,
+                marginTop:i===0?20:0,flexShrink:0}}>✕</button>
+            </div>
+          ))}
+        </div>
+
+        <Btn gold onClick={save} full>Save Card to Catalogue</Btn>
+      </div>
+    </Overlay>
+  );
+}
+
+// ── IMPORT STATEMENT MODAL ───────────────────────────────────────
+function ImportStatementModal({card,uc,onApply,onClose}) {
+  const [step,setStep]=useState('upload');
+  const [format,setFormat]=useState(null);
+  const [matches,setMatches]=useState([]);
+  const [checked,setChecked]=useState({});
+  const [error,setError]=useState('');
+  const [spendTotal,setSpendTotal]=useState(0);
+  const [includeSpend,setIncludeSpend]=useState(true);
+
+  const ISSUER_NAMES={amex:'American Express',chase:'Chase','capital-one':'Capital One',citi:'Citi',boa:'Bank of America','wells-fargo':'Wells Fargo'};
+
+  const slotLabel=(tx,b)=>{
+    const p=b.period||'annual';
+    if(p==='annual') return 'Annual';
+    const idx=periodSlotIdx(tx.date,p);
+    if(p==='monthly') return PLABELS.monthly[idx]||`Month ${idx+1}`;
+    if(p==='quarterly') return PLABELS.quarterly[idx];
+    if(p==='semiannual') return idx===0?'H1 (Jan–Jun)':'H2 (Jul–Dec)';
+    return '';
+  };
+
+  const handleFile=e=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const rows=parseCSVText(ev.target.result);
+        if(rows.length<2){setError('CSV appears empty or has only a header row.');return;}
+        const fmt=detectCSVFormat(rows[0]);
+        if(!fmt){setError('Unrecognized format. Export a CSV from: Amex, Chase, Citi, Capital One, BofA, or Wells Fargo.');return;}
+        const txs=extractCSVTransactions(rows,fmt);
+        const list=txs.map(tx=>({tx,benefitId:matchTxToBenefit(tx.description,card)})).filter(m=>m.benefitId);
+        const spendTxs=extractSpendTransactions(rows,fmt);
+        const total=spendTxs.reduce((s,t)=>s+t.amount,0);
+        setFormat(fmt);
+        setMatches(list);
+        setSpendTotal(total);
+        setIncludeSpend(true);
+        const init={};
+        list.forEach((_,i)=>{init[i]=true;});
+        setChecked(init);
+        setStep('review');
+      }catch(e){setError('Parse error: '+e.message);}
+    };
+    reader.readAsText(f);
+  };
+
+  const applyMatches=()=>{
+    const newUsage={...(uc.benefitUsage||{})};
+    matches.forEach((m,i)=>{
+      if(!checked[i]) return;
+      const b=card.benefits.find(x=>x.id===m.benefitId); if(!b) return;
+      const p=b.period||'annual';
+      const idx=periodSlotIdx(m.tx.date,p);
+      const cap=bSlotMax(b,idx);
+      const amt=Math.min(m.tx.amount,cap);
+      if(p==='annual'){
+        newUsage[b.id]=Math.min((Number(newUsage[b.id])||0)+amt,cap);
+      } else {
+        const pcount=PCOUNT[p];
+        const arr=Array.isArray(newUsage[b.id])?[...newUsage[b.id]]:new Array(pcount).fill(0);
+        while(arr.length<pcount) arr.push(0);
+        arr[idx]=Math.min((Number(arr[idx])||0)+amt,cap);
+        newUsage[b.id]=arr;
+      }
+    });
+    onApply(newUsage, includeSpend?spendTotal:0);
+    onClose();
+  };
+
+  const checkedCount=Object.values(checked).filter(Boolean).length;
+
+  return(
+    <Overlay title="Import Statement" onClose={onClose}>
+      <div style={{padding:'16px 22px'}}>
+        {step==='upload'&&(
+          <>
+            {error&&(
+              <div style={{color:C.red,fontSize:12,marginBottom:12,padding:'10px 12px',
+                background:`${C.red}10`,border:`1px solid ${C.red}30`,borderRadius:10}}>
+                {error}
+              </div>
+            )}
+            <div style={{textAlign:'center',padding:'28px 16px',
+              border:`2px dashed ${C.border2}`,borderRadius:14,marginBottom:14}}>
+              <div style={{fontSize:32,marginBottom:8}}>📄</div>
+              <div style={{fontSize:14,color:C.text,marginBottom:4,fontWeight:500}}>
+                Upload your CSV statement
+              </div>
+              <div style={{fontSize:12,color:C.text3,marginBottom:16}}>
+                Supports: Amex · Chase · Citi · Capital One · BofA · Wells Fargo
+              </div>
+              <label style={{
+                background:`linear-gradient(135deg,${C.gold},${C.goldL})`,color:'#1a1204',
+                border:'none',borderRadius:10,padding:'9px 22px',fontSize:13,
+                fontWeight:700,cursor:'pointer',display:'inline-block'}}>
+                Choose File
+                <input type="file" accept=".csv,.CSV" style={{display:'none'}} onChange={handleFile}/>
+              </label>
+            </div>
+            <div style={{fontSize:11,color:C.text3,lineHeight:1.6}}>
+              💡 In your card app: Account → Statements & Activity → Download as CSV. The file is processed entirely in your browser — nothing is sent anywhere.
+            </div>
+          </>
+        )}
+        {step==='review'&&(
+          <>
+            <div style={{fontSize:12,color:C.text3,marginBottom:12,padding:'8px 12px',
+              background:C.s2,borderRadius:9}}>
+              <span style={{color:C.text,fontWeight:600}}>{ISSUER_NAMES[format]||format}</span> statement detected
+              {' · '}{matches.length} benefit credit{matches.length!==1?'s':''} matched
+            </div>
+            {matches.length===0?(
+              <div style={{textAlign:'center',padding:'24px 0',color:C.text3}}>
+                No matching benefit credits found in this statement.
+              </div>
+            ):(
+              <div style={{display:'flex',flexDirection:'column',gap:7,maxHeight:380,overflowY:'auto',marginBottom:12}}>
+                {matches.map((m,i)=>{
+                  const b=card.benefits.find(x=>x.id===m.benefitId); if(!b) return null;
+                  const slot=slotLabel(m.tx,b);
+                  const on=checked[i];
+                  return(
+                    <div key={i} onClick={()=>setChecked({...checked,[i]:!on})} style={{
+                      display:'flex',alignItems:'flex-start',gap:10,padding:'10px 12px',
+                      background:on?`${C.green}0C`:C.s2,
+                      border:`1px solid ${on?C.green+'33':C.border}`,
+                      borderRadius:11,cursor:'pointer',transition:'all 0.15s'}}>
+                      <div style={{
+                        width:18,height:18,borderRadius:5,flexShrink:0,marginTop:2,
+                        background:on?C.green:'transparent',
+                        border:`2px solid ${on?C.green:C.border2}`,
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        fontSize:10,color:'#000',fontWeight:900}}>
+                        {on?'✓':''}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:'flex',justifyContent:'space-between',gap:8,marginBottom:3}}>
+                          <span style={{fontSize:13,color:C.text,fontWeight:600}}>{b.name}</span>
+                          <span style={{fontSize:13,fontWeight:700,color:C.gold,flexShrink:0}}>
+                            ${m.tx.amount.toFixed(2)}
+                          </span>
+                        </div>
+                        <div style={{fontSize:11,color:C.text3}}>
+                          {m.tx.date} · {m.tx.description.length>42?m.tx.description.slice(0,42)+'…':m.tx.description}
+                        </div>
+                        <div style={{fontSize:11,color:on?C.green:C.text3,marginTop:2}}>
+                          → Mark <strong>{slot}</strong> as used
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {(()=>{
+              const sub=subInfo(uc);
+              const hasActiveSub=!uc.noSub&&sub&&sub.target>0&&!sub.done;
+              return hasActiveSub&&spendTotal>0?(
+                <div onClick={()=>setIncludeSpend(!includeSpend)} style={{
+                  display:'flex',alignItems:'flex-start',gap:10,padding:'12px 14px',
+                  background:includeSpend?`${C.purple}0D`:C.s2,
+                  border:`1px solid ${includeSpend?C.purple+'40':C.border}`,
+                  borderRadius:12,cursor:'pointer',transition:'all 0.15s',marginBottom:4}}>
+                  <div style={{
+                    width:18,height:18,borderRadius:5,flexShrink:0,marginTop:2,
+                    background:includeSpend?C.purple:'transparent',
+                    border:`2px solid ${includeSpend?C.purple:C.border2}`,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    fontSize:10,color:'#fff',fontWeight:900}}>
+                    {includeSpend?'✓':''}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                      <span style={{fontSize:13,fontWeight:600,color:includeSpend?C.purple:C.text}}>
+                        Add qualifying spend to SUB tracker
+                      </span>
+                      <span style={{fontSize:13,fontWeight:700,color:C.purple,flexShrink:0}}>
+                        +${spendTotal.toFixed(2)}
+                      </span>
+                    </div>
+                    <div style={{fontSize:11,color:C.text3}}>
+                      {sub.spend.toLocaleString('en-US',{style:'currency',currency:'USD'})} tracked now
+                      {' → '}
+                      <span style={{color:includeSpend?C.purple:C.text3}}>
+                        ${(sub.spend+spendTotal).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} after import
+                      </span>
+                      {' / $'}{sub.target.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ):null;
+            })()}
+            <div style={{display:'flex',gap:8}}>
+              {(matches.length>0||spendTotal>0)&&(
+                <Btn gold onClick={applyMatches} full>
+                  Apply{checkedCount>0?` ${checkedCount} Credit${checkedCount!==1?'s':''}`:''}{checkedCount>0&&includeSpend&&spendTotal>0?' + ':''}{includeSpend&&spendTotal>0?'Spend':''}
+                </Btn>
+              )}
+              <button onClick={()=>{setStep('upload');setError('');}} style={{
+                background:'transparent',border:`1px solid ${C.border2}`,borderRadius:9,
+                padding:'9px 14px',fontSize:12,color:C.text2,cursor:'pointer',
+                flexShrink:0,whiteSpace:'nowrap'}}>
+                ← Try Again
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Overlay>
+  );
+}
+
 // ── ADD CARD MODAL ────────────────────────────────────────────────
-function AddCard({onClose,userCards,onAdd,preselect=null}) {
+function AddCard({onClose,userCards,onAdd,preselect=null,onManualAdd=()=>{}}) {
   const [q,setQ]=useState("");
   const [sel,setSel]=useState(preselect||null);
   const [nick,setNick]=useState("");
@@ -2275,6 +2931,7 @@ function AddCard({onClose,userCards,onAdd,preselect=null}) {
   const [subBonus,setSubBonus]=useState(preselect?String(preselect.sub.bonus):"");
   const [subTarget,setSubTarget]=useState(preselect?String(preselect.sub.spend):"");
   const [subMonths,setSubMonths]=useState(preselect?String(preselect.sub.months):"");
+  const [cardLast4,setCardLast4]=useState("");
 
   const selectCard=card=>{
     setSel(card);
@@ -2286,18 +2943,20 @@ function AddCard({onClose,userCards,onAdd,preselect=null}) {
 
   const results=useMemo(()=>{
     const lq=q.toLowerCase();
-    return Object.values(DB).filter(c=>
+    return Object.values({...DB,..._extraDB}).filter(c=>
       c.name.toLowerCase().includes(lq)||c.issuer.toLowerCase().includes(lq)||c.short.toLowerCase().includes(lq)
     );
   },[q]);
 
   const doAdd=()=>{
     try{
+      const last4=cardLast4.trim()||undefined;
       if(noSub){
         onAdd({
           instanceId:uid(),cardId:sel.id,nickname:nick.trim(),
           openedDate,noSub:true,subSpend:0,
           benefitUsage:{},mlaWaiver:false,
+          ...(last4?{cardLast4:last4}:{}),
         });
       } else {
         const bonus=Number(subBonus)||sel.sub.bonus;
@@ -2309,6 +2968,7 @@ function AddCard({onClose,userCards,onAdd,preselect=null}) {
           openedDate,subSpend:Number(subSpend)||0,
           ...(hasCustom?{subBonus:bonus,subTarget:target,subMonths:months}:{}),
           benefitUsage:{},mlaWaiver:false,
+          ...(last4?{cardLast4:last4}:{}),
         });
       }
     }catch(e){console.error("AddCard error:",e);}
@@ -2320,7 +2980,11 @@ function AddCard({onClose,userCards,onAdd,preselect=null}) {
   );
 
   return(
-    <Overlay title={sel?`Configure ${sel.short}`:"Add a Card"} onClose={onClose}>
+    <Overlay title={sel?`Configure ${sel.short}`:"Add a Card"} onClose={onClose}
+      action={!sel?<button onClick={onManualAdd} style={{
+        background:`${C.blue}15`,border:`1px solid ${C.blue}40`,color:C.blue,
+        borderRadius:8,padding:'4px 10px',fontSize:11.5,fontWeight:600,cursor:'pointer',
+        whiteSpace:'nowrap'}}>+ Manual Card</button>:null}>
       <div style={{padding:"14px 22px"}}>
         {!sel?(
           <>
@@ -2362,6 +3026,12 @@ function AddCard({onClose,userCards,onAdd,preselect=null}) {
             <div>
               <FLabel>Date Opened</FLabel>
               <Input type="date" value={openedDate} onChange={e=>setOpenedDate(e.target.value)}/>
+            </div>
+            <div>
+              <FLabel>Last 4–5 Digits (optional)</FLabel>
+              <Input value={cardLast4} onChange={e=>setCardLast4(e.target.value.replace(/\D/g,'').slice(0,5))}
+                placeholder="e.g. 1004" style={{fontFamily:'monospace',letterSpacing:2}}/>
+              <div style={{fontSize:11,color:C.text3,marginTop:5}}>Helps auto-identify this card in CSV imports.</div>
             </div>
             <div style={{background:C.s2,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:noSub?0:12}}>
@@ -2420,7 +3090,7 @@ function PooledBenefits({cards,onUpdateCard}) {
   const groups=useMemo(()=>{
     const map={};
     cards.forEach(uc=>{
-      const card=DB[uc.cardId]; if(!card) return;
+      const card=getCard(uc.cardId); if(!card) return;
       card.benefits.forEach(b=>{
         if(!b.value) return;
         const key=b.group||`${uc.cardId}__${b.id}`;
@@ -2514,12 +3184,16 @@ function PooledBenefits({cards,onUpdateCard}) {
 export default function App() {
   const [cards,setCards]=useStored("cardvault_v2",[]);
   const [mlaGlobal,setMlaGlobal]=useStored("cardvault_mla",false);
+  const [customCards,setCustomCards]=useStored("cardvault_custom_v1",[]);
+  useEffect(()=>{ _extraDB=Object.fromEntries(customCards.map(c=>[c.id,c])); },[customCards]);
   const [tab,setTab]=useState("dashboard");
   const [benefitSubTab,setBenefitSubTab]=useState("bycard");
   const [subTrackTab,setSubTrackTab]=useState("ongoing");
+  const [subSort,setSubSort]=useState("expiry");
   const [cardSort,setCardSort]=useState("fee");
   const [selId,setSelId]=useState(null);
   const [showAdd,setShowAdd]=useState(false);
+  const [showManualAdd,setShowManualAdd]=useState(false);
   const [bestCat,setBestCat]=useState("dining");
   const [catalogueQ,setCatalogueQ]=useState("");
   const [catalogueIssuer,setCatalogueIssuer]=useState("all");
@@ -2532,27 +3206,30 @@ export default function App() {
   const updateCard=u=>setCards(cards.map(c=>c.instanceId===u.instanceId?u:c));
   const deleteCard=id=>setCards(cards.filter(c=>c.instanceId!==id));
   const addCard=c=>setCards([...cards,c]);
+  const addCustomCard=cardDef=>{
+    setCustomCards(prev=>[...prev,cardDef]);
+  };
 
   const totalAF=useMemo(()=>cards.reduce((s,uc)=>{
-    if((mlaGlobal&&DB[uc.cardId]?.mlaEligible)||uc.mlaWaiver) return s;
-    return s+(DB[uc.cardId]?.annualFee||0);
+    if((mlaGlobal&&getCard(uc.cardId)?.mlaEligible)||uc.mlaWaiver) return s;
+    return s+(getCard(uc.cardId)?.annualFee||0);
   },0),[cards,mlaGlobal]);
 
   const totalSaved=useMemo(()=>cards.reduce((s,uc)=>s+calcOffset(uc,mlaGlobal).saved,0),[cards,mlaGlobal]);
   const offsetPct=totalAF>0?Math.min(100,(totalSaved/totalAF)*100):0;
 
   const totalPool=useMemo(()=>cards.reduce((s,uc)=>{
-    const card=DB[uc.cardId]; if(!card) return s;
+    const card=getCard(uc.cardId); if(!card) return s;
     return s+card.benefits.reduce((a,b)=>a+bTotalValue(b),0);
   },0),[cards]);
 
   const totalRedeemed=useMemo(()=>cards.reduce((s,uc)=>{
-    const card=DB[uc.cardId]; if(!card) return s;
+    const card=getCard(uc.cardId); if(!card) return s;
     return s+card.benefits.reduce((a,b)=>a+bUsedValue(b,uc.benefitUsage?.[b.id]),0);
   },0),[cards]);
 
   const catRank=useMemo(()=>cards.map(uc=>{
-    const card=DB[uc.cardId]; if(!card) return null;
+    const card=getCard(uc.cardId); if(!card) return null;
     const eff=effectiveRates(uc);
     return{uc,card,rate:eff[bestCat]??eff.other??1};
   }).filter(Boolean).sort((a,b)=>b.rate-a.rate),[cards,bestCat]);
@@ -2560,7 +3237,7 @@ export default function App() {
   const subGroups=useMemo(()=>{
     const ongoing=[],completed=[],nosub=[];
     cards.forEach(uc=>{
-      const card=DB[uc.cardId]; if(!card) return;
+      const card=getCard(uc.cardId); if(!card) return;
       if(uc.noSub){nosub.push({uc,card});return;}
       const sub=subInfo(uc);
       if(!sub){nosub.push({uc,card});return;}
@@ -2590,14 +3267,31 @@ export default function App() {
   const totalPlanRemaining=useMemo(()=>spendPlan.reduce((s,p)=>s+p.remaining,0),[spendPlan]);
   const totalMonthlyNeeded=useMemo(()=>spendPlan.reduce((s,p)=>s+p.monthlyNeeded,0),[spendPlan]);
 
+  const sortedOngoing=useMemo(()=>{
+    const items=subGroups.ongoing;
+    const today=Date.now();
+    const getExpiry=({uc,card})=>{
+      const od=uc.openedDate||uc.addedDate;
+      const opened=od?new Date(od).getTime():today;
+      const months=uc.subMonths??card.sub.months??3;
+      const exp=new Date(opened); exp.setMonth(exp.getMonth()+months);
+      return exp.getTime();
+    };
+    if(subSort==="expiry") return [...items].sort((a,b)=>getExpiry(a)-getExpiry(b));
+    if(subSort==="remaining-low") return [...items].sort((a,b)=>a.sub.remaining-b.sub.remaining);
+    if(subSort==="remaining-high") return [...items].sort((a,b)=>b.sub.remaining-a.sub.remaining);
+    if(subSort==="name") return [...items].sort((a,b)=>(a.uc.nickname||a.card.short).localeCompare(b.uc.nickname||b.card.short));
+    return items;
+  },[subGroups.ongoing,subSort]);
+
   const catalogueIssuers=useMemo(()=>{
-    const s=new Set(Object.values(DB).map(c=>c.issuer));
+    const s=new Set(Object.values({...DB,..._extraDB}).map(c=>c.issuer));
     return Array.from(s).sort();
   },[]);
 
   const catalogueCards=useMemo(()=>{
     const lq=catalogueQ.toLowerCase();
-    return Object.values(DB).filter(c=>{
+    return Object.values({...DB,..._extraDB}).filter(c=>{
       if(catalogueIssuer!=="all"&&c.issuer!==catalogueIssuer) return false;
       if(catalogueType!=="all"&&c.rewardType!==catalogueType) return false;
       if(lq&&!c.name.toLowerCase().includes(lq)&&!c.short.toLowerCase().includes(lq)&&!c.issuer.toLowerCase().includes(lq)) return false;
@@ -2767,7 +3461,7 @@ export default function App() {
                     Annual Fee Offset Tracker
                   </div>
                   {cards.map(uc=>{
-                    const card=DB[uc.cardId]; if(!card) return null;
+                    const card=getCard(uc.cardId); if(!card) return null;
                     if(card.annualFee===0) return null;
                     const off=calcOffset(uc,mlaGlobal);
                     return(
@@ -2826,7 +3520,7 @@ export default function App() {
                   <Btn gold onClick={()=>setShowAdd(true)}>Add a Card</Btn>
                 </div>
               ):sortedCards.map((uc,i)=>{
-                const card=DB[uc.cardId]; if(!card) return null;
+                const card=getCard(uc.cardId); if(!card) return null;
                 const off=calcOffset(uc,mlaGlobal),sub=subInfo(uc);
                 const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
                 const usedBV=card.benefits.reduce((s,b)=>s+bUsedValue(b,uc.benefitUsage?.[b.id]),0);
@@ -2897,7 +3591,7 @@ export default function App() {
                     ))}
                   </div>
                   {benefitSubTab==="bycard"&&cards.map(uc=>{
-                    const card=DB[uc.cardId];
+                    const card=getCard(uc.cardId);
                     if(!card||card.benefits.length===0) return null;
                     return(
                       <div key={uc.instanceId} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,overflow:"hidden"}}>
@@ -2973,11 +3667,26 @@ export default function App() {
 
                   {subTrackTab==="ongoing"&&(
                     <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {subGroups.ongoing.length>0&&(
+                        <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
+                          <span style={{fontSize:11,color:C.text3}}>Sort:</span>
+                          {[["expiry","Expiry (Soonest)"],["remaining-low","Remaining ↑"],["remaining-high","Remaining ↓"],["name","Name"]].map(([id,lbl])=>(
+                            <button key={id} onClick={()=>setSubSort(id)} style={{
+                              background:subSort===id?`${C.purple}20`:"transparent",
+                              border:`1px solid ${subSort===id?C.purple+"60":C.border2}`,
+                              color:subSort===id?C.purple:C.text2,
+                              borderRadius:20,padding:"3px 10px",fontSize:11.5,
+                              fontWeight:subSort===id?600:400,cursor:"pointer",transition:"all 0.15s"}}>
+                              {lbl}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       {subGroups.ongoing.length===0?(
                         <div style={{textAlign:"center",padding:"40px 0",color:C.text3,fontSize:13}}>
                           No ongoing sign-up bonuses
                         </div>
-                      ):subGroups.ongoing.map(({uc,card,sub})=>(
+                      ):sortedOngoing.map(({uc,card,sub})=>(
                         <div key={uc.instanceId} onClick={()=>setSelId(uc.instanceId)} className="hl" style={{
                           background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,padding:"14px 16px"}}>
                           <div style={{display:"flex",gap:12,marginBottom:12}}>
@@ -3256,7 +3965,7 @@ export default function App() {
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {cards.map(uc=>{
-                        const card=DB[uc.cardId]; if(!card||card.annualFee===0) return null;
+                        const card=getCard(uc.cardId); if(!card||card.annualFee===0) return null;
                         return(
                           <div key={uc.instanceId} style={{
                             display:"flex",alignItems:"center",gap:10,padding:"7px 10px",borderRadius:9,
@@ -3292,7 +4001,10 @@ export default function App() {
       </div>
 
       {sel&&<CardDetail uc={sel} onClose={()=>setSelId(null)} onUpdate={updateCard} onDelete={deleteCard} mlaGlobal={mlaGlobal} allCards={cards}/>}
-      {showAdd&&<AddCard onClose={()=>{setShowAdd(false);setTab("dashboard");}} userCards={cards} onAdd={addCard}/>}
+      {showAdd&&<AddCard onClose={()=>{setShowAdd(false);setTab("dashboard");}} userCards={cards} onAdd={addCard}
+        onManualAdd={()=>{setShowAdd(false);setShowManualAdd(true);}}/>}
+      {showManualAdd&&<ManualAddCardModal onClose={()=>setShowManualAdd(false)}
+        onSave={cardDef=>{addCustomCard(cardDef);setShowManualAdd(false);}}/>}
       {catalogueAddCard&&<AddCard preselect={catalogueAddCard} onClose={()=>setCatalogueAddCard(null)} userCards={cards} onAdd={c=>{addCard(c);setCatalogueAddCard(null);setTab("cards");}}/>}
     </>
   );
