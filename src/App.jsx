@@ -149,6 +149,7 @@ const DB = {
     annualFee:0,g1:"#1A3060",g2:"#2244A0",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
     mlaEligible:true,
     rates:{flights:5,hotels:5,dining:3,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    rotating:{rate:5,cats:["dining","groceries","gas","streaming","transit"]},
     sub:{bonus:200,spend:500,months:3},
     benefits:[
       {id:"cell",  name:"Cell Phone Protection (up to $800/claim)",value:0,period:"annual"},
@@ -355,7 +356,10 @@ const DB = {
     id:"boa-customized-cash",name:"Bank of America® Customized Cash Rewards Credit Card",issuer:"Bank of America",short:"BofA Customized Cash",
     annualFee:0,g1:"#700000",g2:"#B00808",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
     mlaEligible:true,
-    rates:{flights:1,hotels:1,dining:3,groceries:2,gas:3,streaming:3,transit:3,other:1},
+    rates:{flights:1,hotels:1,dining:1,groceries:2,gas:1,streaming:1,transit:1,other:1},
+    choosable:[
+      {rate:3,count:1,cats:["gas","dining","flights","streaming","transit"],label:"3% Category (choose 1)"},
+    ],
     sub:{bonus:200,spend:1000,months:3},
     benefits:[],
   },
@@ -644,7 +648,8 @@ const DB = {
     id:"discover-it-cash-back",name:"Discover it® Cash Back",issuer:"Discover",short:"Discover it Cash Back",
     annualFee:0,g1:"#CC5500",g2:"#FF7700",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
     mlaEligible:true,
-    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:5,streaming:1,transit:1,other:1},
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    rotating:{rate:5,cats:["dining","groceries","gas","streaming","transit"]},
     sub:{bonus:0,spend:0,months:12},
     benefits:[],
   },
@@ -699,7 +704,11 @@ const DB = {
     id:"usb-cash-plus",name:"U.S. Bank Cash+® Visa Signature® Card",issuer:"U.S. Bank",short:"Cash+",
     annualFee:0,g1:"#990000",g2:"#BB0F0F",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
     mlaEligible:true,
-    rates:{flights:1,hotels:1,dining:2,groceries:2,gas:1,streaming:5,transit:5,other:1},
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    choosable:[
+      {rate:5,count:2,cats:["dining","streaming","transit","other"],label:"5% Categories (choose 2)"},
+      {rate:2,count:1,cats:["groceries","dining","gas"],label:"2% Everyday Category (choose 1)"},
+    ],
     sub:{bonus:200,spend:1000,months:3},
     benefits:[],
   },
@@ -1293,7 +1302,10 @@ const DB = {
     id:"citi-custom-cash",name:"Citi Custom Cash® Card",issuer:"Citi",short:"Custom Cash",
     annualFee:0,g1:"#002878",g2:"#003EAA",rewardType:"cashback",currency:"Cash Back",cpp:0.01,
     mlaEligible:true,
-    rates:{flights:1,hotels:1,dining:5,groceries:5,gas:5,streaming:5,transit:5,other:1},
+    rates:{flights:1,hotels:1,dining:1,groceries:1,gas:1,streaming:1,transit:1,other:1},
+    choosable:[
+      {rate:5,count:1,cats:["dining","groceries","gas","streaming","transit"],auto:true,label:"Top Spend Category (auto 5%)"},
+    ],
     sub:{bonus:200,spend:1500,months:6},
     benefits:[],
   },
@@ -1439,6 +1451,18 @@ function getVelocity(issuer,allCards){
     const status=count>=rule.limit?"exceeded":count===rule.limit-1?"warning":"ok";
     return{...rule,count,status};
   });
+}
+
+function effectiveRates(uc) {
+  const card=DB[uc.cardId]; if(!card) return {};
+  const base={...card.rates};
+  if(card.rotating&&uc.rotatingCat&&card.rotating.cats.includes(uc.rotatingCat))
+    base[uc.rotatingCat]=Math.max(base[uc.rotatingCat]||1,card.rotating.rate);
+  if(card.choosable&&uc.chosenCats)
+    card.choosable.forEach((tier,ti)=>{
+      (uc.chosenCats[ti]||[]).forEach(cat=>{base[cat]=Math.max(base[cat]||1,tier.rate);});
+    });
+  return base;
 }
 
 function calcOffset(uc,mlaGlobal) {
@@ -1660,6 +1684,8 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
   const [nick,setNick]=useState(uc.nickname||"");
   const [openedDate,setOpenedDate]=useState(uc.openedDate||uc.addedDate||new Date().toISOString().slice(0,10));
   const [bu,setBu]=useState(uc.benefitUsage||{});
+  const [rotatingCat,setRotatingCat]=useState(uc.rotatingCat||"");
+  const [chosenCats,setChosenCats]=useState(uc.chosenCats||{});
   if(!card) return null;
 
   const isWaived=card.annualFee>0&&mlaGlobal&&card.mlaEligible;
@@ -1691,7 +1717,13 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
     setAddingNewSub(false);
   };
   const removeSub=()=>onUpdate({...uc,noSub:true,subSpend:0,subBonus:undefined,subTarget:undefined,subMonths:undefined});
-  const saveSettings=()=>{onUpdate({...uc,nickname:nick,openedDate,benefitUsage:bu});onClose();};
+  const saveSettings=()=>{
+    onUpdate({...uc,nickname:nick,openedDate,benefitUsage:bu,
+      ...(card.rotating?{rotatingCat}:{}),
+      ...(card.choosable?{chosenCats}:{}),
+    });
+    onClose();
+  };
 
   const TABS=[
     {id:"overview",label:"Overview"},
@@ -1722,6 +1754,34 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
       <div style={{padding:"18px 22px"}}>
         {tab==="overview"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {card.rotating&&!uc.rotatingCat&&(
+              <div onClick={()=>setTab("settings")} style={{
+                background:`${C.gold}10`,border:`1px solid ${C.gold}30`,borderRadius:12,
+                padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <span style={{fontSize:16}}>🔄</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:C.gold}}>Set rotating category</div>
+                  <div style={{fontSize:11,color:C.text3}}>
+                    Tap to pick this quarter's {card.rotating.rate}% category for accurate spend recommendations.
+                  </div>
+                </div>
+                <span style={{color:C.text3,fontSize:16}}>›</span>
+              </div>
+            )}
+            {card.choosable&&card.choosable.some((t,ti)=>(uc.chosenCats?.[ti]||[]).length===0)&&(
+              <div onClick={()=>setTab("settings")} style={{
+                background:`${C.blue}10`,border:`1px solid ${C.blue}30`,borderRadius:12,
+                padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <span style={{fontSize:16}}>🎯</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:C.blue}}>Choose your earn categories</div>
+                  <div style={{fontSize:11,color:C.text3}}>
+                    Tap to configure this card's flexible category selections.
+                  </div>
+                </div>
+                <span style={{color:C.text3,fontSize:16}}>›</span>
+              </div>
+            )}
             {card.annualFee>0&&(
             <div style={{background:C.s2,borderRadius:14,padding:16,border:`1px solid ${C.border}`}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
@@ -1993,6 +2053,70 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
                 </div>
               </div>
             )}
+            {card.rotating&&(
+              <div style={{background:C.s2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                <div style={{fontSize:10.5,color:C.text3,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                  🔄 Rotating Category (Current Quarter)
+                </div>
+                <div style={{fontSize:11.5,color:C.text3,marginBottom:10}}>
+                  Select this quarter's {card.rotating.rate}% category for accurate "Best Card" recommendations.
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {["none",...card.rotating.cats].map(cat=>{
+                    const active=cat==="none"?rotatingCat==="":rotatingCat===cat;
+                    return(
+                      <button key={cat} onClick={()=>setRotatingCat(cat==="none"?"":cat)} style={{
+                        background:active?`${C.gold}20`:"transparent",
+                        border:`1px solid ${active?C.gold+"60":C.border2}`,
+                        color:active?C.gold:C.text2,borderRadius:20,
+                        padding:"4px 12px",fontSize:12,fontWeight:active?600:400,cursor:"pointer",transition:"all 0.15s"}}>
+                        {cat==="none"?"Not set":`${CATS[cat]?.icon||""} ${CATS[cat]?.label||cat}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {card.choosable&&card.choosable.map((tier,tIdx)=>{
+              const chosen=chosenCats[tIdx]||[];
+              return(
+                <div key={tIdx} style={{background:C.s2,border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontSize:10.5,color:C.text3,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:0.9}}>
+                    🎯 {tier.label}
+                  </div>
+                  {tier.auto&&(
+                    <div style={{fontSize:11.5,color:C.text3,marginBottom:10}}>
+                      Automatically applies {tier.rate}% to your highest spend category. Select which you primarily use it for.
+                    </div>
+                  )}
+                  {!tier.auto&&tier.count>1&&(
+                    <div style={{fontSize:11.5,color:C.text3,marginBottom:10}}>
+                      Choose up to {tier.count} · {chosen.length}/{tier.count} selected
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {tier.cats.map(cat=>{
+                      const isOn=chosen.includes(cat);
+                      const atLimit=!isOn&&chosen.length>=tier.count;
+                      return(
+                        <button key={cat} onClick={()=>{
+                          if(atLimit) return;
+                          const next=isOn?chosen.filter(c=>c!==cat):tier.count===1?[cat]:[...chosen,cat];
+                          setChosenCats({...chosenCats,[tIdx]:next});
+                        }} style={{
+                          background:isOn?`${C.blue}20`:atLimit?C.s3+"80":"transparent",
+                          border:`1px solid ${isOn?C.blue+"60":C.border2}`,
+                          color:isOn?C.blue:atLimit?C.text3:C.text2,borderRadius:20,
+                          padding:"4px 12px",fontSize:12,fontWeight:isOn?600:400,
+                          cursor:atLimit?"not-allowed":"pointer",transition:"all 0.15s",opacity:atLimit?0.5:1}}>
+                          {CATS[cat]?.icon||""} {CATS[cat]?.label||cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
             <Btn gold onClick={saveSettings} full>Save Changes</Btn>
             <Btn danger onClick={()=>{
               if(window.confirm(`Remove ${card.short} from your wallet?`)){onDelete(uc.instanceId);onClose();}
@@ -2004,17 +2128,153 @@ function CardDetail({uc,onClose,onUpdate,onDelete,mlaGlobal,allCards}) {
   );
 }
 
+// ── CATALOGUE CARD ───────────────────────────────────────────────
+function CatalogueCard({card,expanded,onToggle,onAdd,walletCount}) {
+  const totalBV=card.benefits.reduce((s,b)=>s+bTotalValue(b),0);
+  const creditBenefits=card.benefits.filter(b=>bTotalValue(b)>0);
+  const accessBenefits=card.benefits.filter(b=>bTotalValue(b)===0);
+  const topRates=Object.entries(card.rates).filter(([,v])=>v>1).sort((a,b)=>b[1]-a[1]);
+  const pLabel=b=>{
+    const p=b.period||"annual";
+    if(p==="monthly") return b.decemberBonus?`$${b.value}/mo ($${b.value+b.decemberBonus} Dec)`:`$${b.value}/mo`;
+    if(p==="quarterly") return `$${b.value}/qtr`;
+    if(p==="semiannual") return `$${b.value}/semi`;
+    return `$${b.value}/yr`;
+  };
+  return(
+    <div style={{background:C.surface,border:`1px solid ${expanded?C.border2:C.border}`,
+      borderRadius:16,overflow:"hidden",transition:"border-color 0.15s"}}>
+      <div onClick={onToggle} style={{display:"flex",gap:12,padding:14,cursor:"pointer",
+        alignItems:"center"}} className="hl" >
+        <CardArt card={card} sm/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,marginBottom:2}}>
+            {card.short}
+          </div>
+          <div style={{fontSize:11.5,color:C.text3,marginBottom:7}}>{card.issuer}</div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {card.annualFee===0?<Pill color={C.green}>$0 AF</Pill>:<Pill color={C.red}>${card.annualFee}/yr</Pill>}
+            <Pill color={card.rewardType==="cashback"?C.green:C.blue}>{card.rewardType}</Pill>
+            {card.mlaEligible&&<Pill color={C.gold}>🎖 MLA</Pill>}
+            {walletCount>0&&<Pill color={C.purple}>{walletCount} owned</Pill>}
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0}}>
+          {totalBV>0&&<span style={{fontSize:12,fontWeight:700,color:C.gold}}>${totalBV}/yr</span>}
+          <span style={{color:C.text3,fontSize:18,display:"inline-block",
+            transform:expanded?"rotate(90deg)":"none",transition:"transform 0.2s"}}>›</span>
+        </div>
+      </div>
+      {expanded&&(
+        <div style={{borderTop:`1px solid ${C.border}`,padding:"14px 16px",
+          display:"flex",flexDirection:"column",gap:14}}>
+          <div>
+            <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,
+              textTransform:"uppercase",letterSpacing:0.9}}>Earn Rates</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {topRates.map(([cat,rate])=>(
+                <div key={cat} style={{background:C.s2,border:`1px solid ${C.border}`,
+                  borderRadius:8,padding:"5px 11px",fontSize:12.5}}>
+                  <span style={{fontWeight:700,color:C.gold}}>{rate}x</span>
+                  <span style={{color:C.text2,marginLeft:5}}>
+                    {CATS[cat]?.icon} {CATS[cat]?.label||cat}
+                  </span>
+                </div>
+              ))}
+              {card.rotating&&(
+                <div style={{background:`${C.gold}10`,border:`1px solid ${C.gold}30`,
+                  borderRadius:8,padding:"5px 11px",fontSize:12.5}}>
+                  <span style={{fontWeight:700,color:C.gold}}>{card.rotating.rate}x</span>
+                  <span style={{color:C.gold,marginLeft:5}}>🔄 Rotating (quarterly)</span>
+                </div>
+              )}
+              {card.choosable&&card.choosable.map((tier,i)=>(
+                <div key={i} style={{background:`${C.blue}10`,border:`1px solid ${C.blue}30`,
+                  borderRadius:8,padding:"5px 11px",fontSize:12.5}}>
+                  <span style={{fontWeight:700,color:C.blue}}>{tier.rate}x</span>
+                  <span style={{color:C.blue,marginLeft:5}}>🎯 {tier.auto?"Auto":tier.count>1?`Choose ${tier.count}`:"Choose 1"}</span>
+                </div>
+              ))}
+              <div style={{background:C.s2,border:`1px solid ${C.border}`,
+                borderRadius:8,padding:"5px 11px",fontSize:12.5}}>
+                <span style={{fontWeight:700,color:C.text3}}>1x</span>
+                <span style={{color:C.text3,marginLeft:5}}>Everything else</span>
+              </div>
+            </div>
+            {(card.rotating||card.choosable)&&(
+              <div style={{fontSize:11,color:C.text3,marginTop:8}}>
+                {card.rotating&&`🔄 ${card.rotating.rate}% rotates quarterly — set your current quarter's category in card settings. `}
+                {card.choosable?.map((t,i)=>`🎯 ${t.label}${t.auto?" — auto-applies to your top spending category":""}.`).join(" ")}
+              </div>
+            )}
+          </div>
+          <div>
+            <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,
+              textTransform:"uppercase",letterSpacing:0.9}}>Sign-Up Bonus</div>
+            <div style={{background:C.s2,borderRadius:10,padding:"10px 14px",
+              display:"flex",justifyContent:"space-between",alignItems:"center",
+              border:`1px solid ${C.border}`}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:600,color:C.gold}}>
+                {card.rewardType==="cashback"
+                  ?`$${card.sub.bonus.toLocaleString()}`
+                  :`${card.sub.bonus.toLocaleString()} ${card.currency}`}
+              </span>
+              {card.sub.spend>0&&(
+                <span style={{fontSize:11.5,color:C.text3}}>
+                  Spend ${card.sub.spend.toLocaleString()} in {card.sub.months} mo
+                </span>
+              )}
+            </div>
+          </div>
+          {creditBenefits.length>0&&(
+            <div>
+              <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,
+                textTransform:"uppercase",letterSpacing:0.9}}>
+                Credits & Benefits
+                <span style={{color:C.gold,marginLeft:6}}> · ${totalBV}/yr total</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {creditBenefits.map(b=>(
+                  <div key={b.id} style={{display:"flex",justifyContent:"space-between",
+                    alignItems:"center",padding:"7px 11px",background:C.s2,borderRadius:8}}>
+                    <span style={{fontSize:12.5,color:C.text,flex:1,marginRight:8}}>{b.name}</span>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                      <span style={{fontSize:11,color:C.text3}}>{pLabel(b)}</span>
+                      <span style={{fontWeight:700,fontSize:12,color:C.gold,
+                        minWidth:50,textAlign:"right"}}>${bTotalValue(b)}/yr</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {accessBenefits.length>0&&(
+            <div>
+              <div style={{fontSize:10.5,color:C.text3,marginBottom:8,fontWeight:600,
+                textTransform:"uppercase",letterSpacing:0.9}}>Access & Perks</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {accessBenefits.map(b=><Pill key={b.id} color={C.text3}>{b.name}</Pill>)}
+              </div>
+            </div>
+          )}
+          <Btn gold onClick={()=>onAdd(card)} full>+ Add to Wallet</Btn>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ADD CARD MODAL ────────────────────────────────────────────────
-function AddCard({onClose,userCards,onAdd}) {
+function AddCard({onClose,userCards,onAdd,preselect=null}) {
   const [q,setQ]=useState("");
-  const [sel,setSel]=useState(null);
+  const [sel,setSel]=useState(preselect||null);
   const [nick,setNick]=useState("");
   const [openedDate,setOpenedDate]=useState(new Date().toISOString().slice(0,10));
   const [noSub,setNoSub]=useState(false);
   const [subSpend,setSubSpend]=useState("0");
-  const [subBonus,setSubBonus]=useState("");
-  const [subTarget,setSubTarget]=useState("");
-  const [subMonths,setSubMonths]=useState("");
+  const [subBonus,setSubBonus]=useState(preselect?String(preselect.sub.bonus):"");
+  const [subTarget,setSubTarget]=useState(preselect?String(preselect.sub.spend):"");
+  const [subMonths,setSubMonths]=useState(preselect?String(preselect.sub.months):"");
 
   const selectCard=card=>{
     setSel(card);
@@ -2261,6 +2521,12 @@ export default function App() {
   const [selId,setSelId]=useState(null);
   const [showAdd,setShowAdd]=useState(false);
   const [bestCat,setBestCat]=useState("dining");
+  const [catalogueQ,setCatalogueQ]=useState("");
+  const [catalogueIssuer,setCatalogueIssuer]=useState("all");
+  const [catalogueType,setCatalogueType]=useState("all");
+  const [catalogueSort,setCatalogueSort]=useState("fee");
+  const [catalogueExpanded,setCatalogueExpanded]=useState(null);
+  const [catalogueAddCard,setCatalogueAddCard]=useState(null);
 
   const sel=cards.find(uc=>uc.instanceId===selId);
   const updateCard=u=>setCards(cards.map(c=>c.instanceId===u.instanceId?u:c));
@@ -2287,7 +2553,8 @@ export default function App() {
 
   const catRank=useMemo(()=>cards.map(uc=>{
     const card=DB[uc.cardId]; if(!card) return null;
-    return{uc,card,rate:card.rates[bestCat]??card.rates.other??1};
+    const eff=effectiveRates(uc);
+    return{uc,card,rate:eff[bestCat]??eff.other??1};
   }).filter(Boolean).sort((a,b)=>b.rate-a.rate),[cards,bestCat]);
 
   const subGroups=useMemo(()=>{
@@ -2323,6 +2590,32 @@ export default function App() {
   const totalPlanRemaining=useMemo(()=>spendPlan.reduce((s,p)=>s+p.remaining,0),[spendPlan]);
   const totalMonthlyNeeded=useMemo(()=>spendPlan.reduce((s,p)=>s+p.monthlyNeeded,0),[spendPlan]);
 
+  const catalogueIssuers=useMemo(()=>{
+    const s=new Set(Object.values(DB).map(c=>c.issuer));
+    return Array.from(s).sort();
+  },[]);
+
+  const catalogueCards=useMemo(()=>{
+    const lq=catalogueQ.toLowerCase();
+    return Object.values(DB).filter(c=>{
+      if(catalogueIssuer!=="all"&&c.issuer!==catalogueIssuer) return false;
+      if(catalogueType!=="all"&&c.rewardType!==catalogueType) return false;
+      if(lq&&!c.name.toLowerCase().includes(lq)&&!c.short.toLowerCase().includes(lq)&&!c.issuer.toLowerCase().includes(lq)) return false;
+      return true;
+    }).sort((a,b)=>{
+      if(catalogueSort==="fee") return b.annualFee-a.annualFee;
+      if(catalogueSort==="name"){
+        const na=(a.short||a.name).toLowerCase(),nb=(b.short||b.name).toLowerCase();
+        return na<nb?-1:na>nb?1:0;
+      }
+      if(catalogueSort==="issuer"){
+        const ic=a.issuer.toLowerCase()<b.issuer.toLowerCase()?-1:a.issuer.toLowerCase()>b.issuer.toLowerCase()?1:0;
+        return ic!==0?ic:b.annualFee-a.annualFee;
+      }
+      return 0;
+    });
+  },[catalogueQ,catalogueIssuer,catalogueType,catalogueSort]);
+
   const sortedCards=useMemo(()=>{
     const byFee=(a,b)=>(DB[b.cardId]?.annualFee||0)-(DB[a.cardId]?.annualFee||0);
     if(cardSort==="fee") return [...cards].sort(byFee);
@@ -2347,7 +2640,7 @@ export default function App() {
   },[cards,cardSort]);
 
   const hasCards=cards.length>0;
-  const NAV=[["dashboard","Overview"],["cards","My Cards"],["benefits","Benefits"],["subs","Sign-Up Bonuses"],["settings","Settings"]];
+  const NAV=[["dashboard","Overview"],["cards","My Cards"],["benefits","Benefits"],["subs","Sign-Up Bonuses"],["catalogue","Catalogue"],["settings","Settings"]];
 
   return(
     <>
@@ -2862,6 +3155,81 @@ export default function App() {
             </div>
           )}
 
+          {/* ── CATALOGUE ── */}
+          {tab==="catalogue"&&(
+            <div className="fu" style={{display:"flex",flexDirection:"column",gap:14}}>
+              {/* Search */}
+              <Input value={catalogueQ} onChange={e=>setCatalogueQ(e.target.value)}
+                placeholder="Search cards by name or issuer…"/>
+
+              {/* Issuer filter */}
+              <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+                {["all",...catalogueIssuers].map(iss=>(
+                  <button key={iss} onClick={()=>setCatalogueIssuer(iss)} style={{
+                    background:catalogueIssuer===iss?`${C.gold}18`:"transparent",
+                    border:`1px solid ${catalogueIssuer===iss?C.gold+"50":C.border2}`,
+                    color:catalogueIssuer===iss?C.gold:C.text2,
+                    borderRadius:20,padding:"4px 13px",fontSize:11.5,
+                    fontWeight:catalogueIssuer===iss?600:400,
+                    cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.15s"}}>
+                    {iss==="all"?"All Issuers":iss}
+                  </button>
+                ))}
+              </div>
+
+              {/* Type + Sort row */}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",gap:5}}>
+                  {[["all","All"],["points","Points"],["miles","Miles"],["cashback","Cash Back"]].map(([id,lbl])=>(
+                    <button key={id} onClick={()=>setCatalogueType(id)} style={{
+                      background:catalogueType===id?`${C.blue}18`:"transparent",
+                      border:`1px solid ${catalogueType===id?C.blue+"50":C.border2}`,
+                      color:catalogueType===id?C.blue:C.text2,
+                      borderRadius:20,padding:"3px 11px",fontSize:11.5,
+                      fontWeight:catalogueType===id?600:400,
+                      cursor:"pointer",transition:"all 0.15s"}}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  <span style={{fontSize:11,color:C.text3}}>Sort:</span>
+                  {[["fee","Annual Fee"],["name","Name"],["issuer","Issuer"]].map(([id,lbl])=>(
+                    <button key={id} onClick={()=>setCatalogueSort(id)} style={{
+                      background:catalogueSort===id?`${C.blue}18`:"transparent",
+                      border:`1px solid ${catalogueSort===id?C.blue+"50":C.border2}`,
+                      color:catalogueSort===id?C.blue:C.text2,
+                      borderRadius:20,padding:"3px 11px",fontSize:11.5,
+                      fontWeight:catalogueSort===id?600:400,
+                      cursor:"pointer",transition:"all 0.15s"}}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Results count */}
+              <div style={{fontSize:11.5,color:C.text3}}>
+                {catalogueCards.length} card{catalogueCards.length!==1?"s":""} found
+              </div>
+
+              {/* Card list */}
+              {catalogueCards.map(card=>(
+                <CatalogueCard
+                  key={card.id}
+                  card={card}
+                  expanded={catalogueExpanded===card.id}
+                  onToggle={()=>setCatalogueExpanded(prev=>prev===card.id?null:card.id)}
+                  onAdd={c=>setCatalogueAddCard(c)}
+                  walletCount={cards.filter(uc=>uc.cardId===card.id).length}
+                />
+              ))}
+              {catalogueCards.length===0&&(
+                <div style={{textAlign:"center",padding:"40px 0",color:C.text3}}>No cards match your filters</div>
+              )}
+            </div>
+          )}
+
           {/* ── SETTINGS ── */}
           {tab==="settings"&&(
             <div className="fu" style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -2925,6 +3293,7 @@ export default function App() {
 
       {sel&&<CardDetail uc={sel} onClose={()=>setSelId(null)} onUpdate={updateCard} onDelete={deleteCard} mlaGlobal={mlaGlobal} allCards={cards}/>}
       {showAdd&&<AddCard onClose={()=>{setShowAdd(false);setTab("dashboard");}} userCards={cards} onAdd={addCard}/>}
+      {catalogueAddCard&&<AddCard preselect={catalogueAddCard} onClose={()=>setCatalogueAddCard(null)} userCards={cards} onAdd={c=>{addCard(c);setCatalogueAddCard(null);setTab("cards");}}/>}
     </>
   );
 }
